@@ -1,0 +1,411 @@
+<!-- Sohlene Daily Stock Dashboard -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ivory:#FBF8F3; --ink:#2A2622; --gold:#A9813F; --gold-soft:#D9C7A0;
+    --burgundy:#6E2B3A; --line:#E4DCC9; --up:#3F6B4A; --down:#A8442F;
+  }
+  * { box-sizing:border-box; }
+  #sohlene-dash{
+    background:var(--ivory); color:var(--ink); font-family:'Inter',sans-serif;
+    padding:32px 28px 40px; border-radius:2px; max-width:1060px; margin:0 auto;
+  }
+  #sohlene-dash .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:18px; flex-wrap:wrap; gap:10px;
+  }
+  #sohlene-dash h1{ font-family:'Cormorant Garamond', serif; font-weight:600; font-size:36px; margin:0; }
+  #sohlene-dash .as-of{ font-size:12px; color:#7A7367; text-align:right; line-height:1.5; }
+  #sohlene-dash .as-of b{ color:var(--ink); font-weight:600; }
+  #sohlene-dash .refresh-btn{
+    background:none; border:1px solid var(--ink); color:var(--ink); font-family:'Inter';
+    font-size:11.5px; padding:4px 10px; margin-top:4px; cursor:pointer; border-radius:2px; transition:background .15s;
+  }
+  #sohlene-dash .refresh-btn:hover{ background:var(--ink); color:var(--ivory); }
+  #sohlene-dash .sync-note{ font-size:11px; color:var(--gold); margin-top:2px; max-width:240px; }
+
+  /* Filter bar */
+  #sohlene-dash .filter-bar{
+    display:flex; align-items:center; flex-wrap:wrap; gap:18px; padding:12px 0 18px; border-bottom:1px solid var(--line); margin-bottom:22px;
+  }
+  #sohlene-dash .filter-group{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  #sohlene-dash .filter-label{ font-size:11px; color:#7A7367; margin-right:2px; }
+  #sohlene-dash .range-btn{
+    background:none; border:1px solid var(--line); color:var(--ink); font-family:'Inter'; font-size:12px;
+    padding:5px 12px; cursor:pointer; border-radius:14px; transition:.15s;
+  }
+  #sohlene-dash .range-btn.active{ background:var(--burgundy); border-color:var(--burgundy); color:var(--ivory); }
+  #sohlene-dash .range-btn:hover:not(.active){ border-color:var(--gold); }
+  #sohlene-dash .cat-chip{
+    background:none; border:1px solid var(--line); color:var(--ink); font-family:'Inter'; font-size:11.5px;
+    padding:4px 10px; cursor:pointer; border-radius:14px; transition:.15s; opacity:0.45;
+  }
+  #sohlene-dash .cat-chip.active{ opacity:1; border-color:currentColor; font-weight:600; }
+  #sohlene-dash .cat-all-btn{
+    background:none; border:none; color:var(--gold); font-family:'Inter'; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;
+  }
+
+  #sohlene-dash .kpi-row{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0;
+    border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); margin-bottom:32px;
+  }
+  #sohlene-dash .kpi{ padding:16px 18px; border-right:1px solid var(--line); }
+  #sohlene-dash .kpi:last-child{ border-right:none; }
+  #sohlene-dash .kpi .num{ font-family:'Cormorant Garamond', serif; font-size:34px; font-weight:600; color:var(--burgundy); line-height:1; }
+  #sohlene-dash .kpi .lbl{ font-size:11.5px; color:#7A7367; margin-top:6px; }
+  #sohlene-dash .kpi .sub{ font-size:11px; margin-top:3px; font-weight:600; }
+  #sohlene-dash .sub.pos{ color:var(--up); } #sohlene-dash .sub.neg{ color:var(--down); } #sohlene-dash .sub.flat{ color:#7A7367; }
+
+  #sohlene-dash .section-label{ font-family:'Cormorant Garamond', serif; font-style:italic; font-size:19px; margin:34px 0 12px; }
+  #sohlene-dash .grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:34px; }
+  @media (max-width:760px){ #sohlene-dash .grid-2{ grid-template-columns:1fr; } }
+
+  #sohlene-dash table{ width:100%; border-collapse:collapse; font-size:13px; }
+  #sohlene-dash th{ text-align:right; font-weight:600; font-size:11px; color:#7A7367; border-bottom:1px solid var(--ink); padding:5px 6px; }
+  #sohlene-dash th:first-child, #sohlene-dash td:first-child{ text-align:left; }
+  #sohlene-dash td{ text-align:right; padding:6px 6px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  #sohlene-dash tr:last-child td{ font-weight:700; }
+
+  #sohlene-dash .chart-box{ position:relative; height:230px; }
+  #sohlene-dash .chart-box.tall{ height:280px; }
+  #sohlene-dash .err{ color:var(--down); font-size:13px; text-align:center; padding:30px 0; }
+</style>
+
+<div id="sohlene-dash">
+  <div class="masthead">
+    <h1>Sohlene &nbsp;Stock Ledger</h1>
+    <div class="as-of">
+      Last entry: <b id="ss-lastdate">—</b><br>
+      <span id="ss-refreshtime">—</span>
+      <div class="sync-note" id="ss-syncnote"></div>
+      <div><button class="refresh-btn" id="ss-refresh">Try live refresh</button></div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Show</span>
+      <button class="range-btn" data-range="7">Last 7</button>
+      <button class="range-btn" data-range="14">Last 14</button>
+      <button class="range-btn" data-range="30">Last 30</button>
+      <button class="range-btn active" data-range="all">All time</button>
+    </div>
+    <div class="filter-group" id="ss-cat-filters">
+      <span class="filter-label">Categories</span>
+      <!-- chips injected by JS -->
+      <button class="cat-all-btn" id="ss-cat-all">select all</button>
+    </div>
+  </div>
+
+  <div id="ss-body"><div class="err">Loading…</div></div>
+</div>
+
+<script>
+(function(){
+  const SHEET_ID = "1VOlPAg-mcfiwoXc7wgEym7FmQf9bVTaUONWzwawQJsk";
+  const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+  const HEADERS = ["Date","Rings","Earrings","Bracelet","Bangle","Necklace","Pendant","RFS","Stone","Approval","Ring Collet","Detachable rings","Added to stock","Sent for repair","Sale","Total"];
+  const CATEGORIES = ["Rings","Earrings","Bracelet","Bangle","Necklace","Pendant","RFS","Stone","Ring Collet","Detachable rings"];
+  const PALETTE = ['#6E2B3A','#A9813F','#3F6B4A','#4A5A7A','#8A5A3C','#7A7367','#B8935B','#5A3A4A','#2A6B6A','#9B6B4A'];
+  const CAT_COLOR = {}; CATEGORIES.forEach((c,i)=>CAT_COLOR[c]=PALETTE[i%PALETTE.length]);
+
+  // Snapshot captured from the live sheet — always shown, replaced automatically if a live fetch succeeds.
+  const SNAPSHOT_ROWS = [
+    ["03.06.2026",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    ["03.07.2026",8,0,0,0,0,0,0,0,0,0,0,0,0,0,8],
+    ["04.07.2026",6,1,0,0,0,0,0,0,0,0,0,0,1,0,7],
+    ["06.07.2026",7,1,0,0,0,0,0,0,0,0,0,0,0,0,8],
+    ["07.07.2026",7,1,0,0,0,0,0,0,0,0,0,0,0,0,8],
+    ["08.07.2026",7,1,0,0,0,0,0,0,0,0,0,0,0,0,8],
+    ["09.07.2026",7,1,0,0,0,0,0,0,0,0,0,0,0,0,8],
+    ["10.07.2026",7,1,0,0,0,0,0,0,0,0,0,0,0,0,8],
+    ["11.07.2026",7,1,0,0,0,0,0,0,0,0,0,0,1,0,8],
+    ["13.07.2026",12,1,0,0,0,0,0,0,0,0,0,6,1,0,13],
+    ["14.07.2026",12,1,0,0,0,0,0,0,0,0,0,0,1,0,13],
+    ["15.07.2026",12,1,0,0,0,0,0,0,0,0,0,0,1,0,13],
+    ["16.07.2026",12,1,0,0,0,0,0,0,0,0,0,0,1,0,13],
+    ["17.07.2026",12,1,0,0,0,0,0,0,0,0,0,0,1,0,13],
+    ["18.07.2026",12,1,0,0,0,0,0,0,12,0,0,0,1,0,13],
+    ["20.07.2026",17,5,0,0,0,0,0,0,0,0,0,9,1,0,22],
+    ["21.07.2026",17,5,0,0,0,0,0,2,0,0,0,0,1,0,22],
+    ["22.07.2026",17,5,0,0,0,0,0,2,0,0,0,0,1,0,22],
+    ["23.07.2026",17,5,0,0,0,0,0,2,0,0,0,0,1,0,22],
+    ["24.07.2026",17,5,0,0,0,0,0,0,0,0,0,0,1,0,22],
+    ["25.07.2026",17,5,0,0,0,0,0,0,0,0,0,0,1,0,22],
+    ["27.07.2026",17,5,0,0,0,0,0,0,0,0,0,0,1,0,22],
+    ["28.07.2026",17,5,0,0,0,0,0,0,0,0,0,0,1,0,22],
+    ["29.07.2026",17,5,0,0,0,0,0,0,0,0,0,0,1,0,22],
+    ["30.07.2026",17,5,0,0,0,0,0,0,0,0,0,0,1,0,22],
+    ["31.07.2026",17,5,0,0,0,0,0,0,0,0,0,0,1,0,22],
+    ["01.08.2026",17,5,0,0,0,0,0,0,0,0,0,0,1,0,22],
+    ["03.08.2026",20,8,2,0,0,1,0,0,0,0,0,9,1,0,31],
+    ["04.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["05.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["06.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["07.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["08.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["10.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["11.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["12.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["13.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["14.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["17.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["18.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["19.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["20.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["21.08.2026",20,8,2,0,0,1,0,0,0,0,0,0,1,0,31],
+    ["22.08.2026",22,8,2,0,0,1,0,0,0,0,0,2,0,0,33],
+    ["24.08.2026",22,8,2,0,0,1,0,0,0,0,0,0,0,0,33],
+    ["25.08.2026",22,8,2,0,0,1,0,0,0,0,0,0,0,0,33],
+    ["26.08.2026",22,8,2,0,0,1,0,0,0,0,0,0,0,0,33],
+    ["27.08.2026",21,8,2,0,0,1,0,0,1,0,0,0,0,0,32],
+    ["29.08.2026",18,8,2,0,0,1,0,0,4,0,0,0,0,0,29],
+    ["31.08.2026",21,8,2,0,0,1,0,0,0,0,0,0,0,1,32]
+  ];
+
+  function rowsToObjects(rows){ return rows.map(r => { const o={}; HEADERS.forEach((h,i)=>o[h]=r[i]); return o; }); }
+
+  function fmtDate(d){
+    const m = d.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if(!m) return d;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(m[1],10)} ${months[parseInt(m[2],10)-1]} ${m[3]}`;
+  }
+
+  function parseCSV(text){
+    const rows = Papa.parse(text.trim(), {skipEmptyLines:false}).data;
+    let headerIdx = -1;
+    for(let i=0;i<rows.length;i++){ if((rows[i][0]||'').trim()==='Date'){ headerIdx=i; break; } }
+    if(headerIdx===-1) throw new Error('Header row not found');
+    const headers = rows[headerIdx].map(h=>(h||'').trim());
+    const out = [];
+    for(let i=headerIdx+1;i<rows.length;i++){
+      const r = rows[i];
+      if(!r || !(r[0]||'').trim()) continue;
+      const obj = {};
+      headers.forEach((h,idx)=>{ if(!h) return; const raw=(r[idx]||'').trim(); obj[h]= h==='Date'?raw:(raw===''?0:Number(raw)); });
+      out.push(obj);
+    }
+    return out;
+  }
+
+  // ---- App state ----
+  let ALL_DATA = [];
+  let rangeFilter = 'all';               // '7' | '14' | '30' | 'all'
+  let activeCats = new Set(CATEGORIES);  // categories currently toggled on
+  let areaChart, pieChart, hbarChart, flowChart, stackAreaChart;
+
+  const body = document.getElementById('ss-body');
+  const lastDateEl = document.getElementById('ss-lastdate');
+  const refreshTimeEl = document.getElementById('ss-refreshtime');
+  const syncNoteEl = document.getElementById('ss-syncnote');
+  const catFilterWrap = document.getElementById('ss-cat-filters');
+  function destroy(c){ if(c) c.destroy(); }
+
+  function buildCategoryChips(dataForCats){
+    // categories that actually have any non-zero value in the dataset get a chip
+    const present = CATEGORIES.filter(c => dataForCats.some(r => (r[c]||0) > 0));
+    // remove old chips (keep label + select-all button)
+    Array.from(catFilterWrap.querySelectorAll('.cat-chip')).forEach(el => el.remove());
+    const selectAllBtn = document.getElementById('ss-cat-all');
+    present.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'cat-chip' + (activeCats.has(c) ? ' active' : '');
+      btn.textContent = c;
+      btn.style.color = CAT_COLOR[c];
+      btn.dataset.cat = c;
+      btn.addEventListener('click', () => {
+        if(activeCats.has(c)) activeCats.delete(c); else activeCats.add(c);
+        renderAll();
+      });
+      catFilterWrap.insertBefore(btn, selectAllBtn);
+    });
+  }
+
+  function getFilteredData(){
+    if(rangeFilter === 'all') return ALL_DATA;
+    const n = parseInt(rangeFilter, 10);
+    return ALL_DATA.slice(-n);
+  }
+
+  function renderAll(){
+    const data = getFilteredData();
+    buildCategoryChips(ALL_DATA);
+    render(data);
+  }
+
+  function render(data){
+    if(!data.length){ body.innerHTML = '<div class="err">No stock rows in this range.</div>'; return; }
+    const catsOn = CATEGORIES.filter(c => activeCats.has(c));
+    const latest = data[data.length-1];
+    const prev = data.length>1 ? data[data.length-2] : null;
+    const first = data[0];
+
+    // Total, recomputed from only the active categories so it responds to the filter
+    const rowTotal = r => catsOn.reduce((s,c)=>s+(r[c]||0), 0);
+    const total = rowTotal(latest);
+
+    lastDateEl.textContent = fmtDate(latest['Date']);
+
+    let deltaTxt = '', deltaCls = 'flat';
+    if(prev){ const diff = total - rowTotal(prev); deltaCls = diff>0?'pos':diff<0?'neg':'flat'; deltaTxt = `${diff>0?'+':''}${diff} vs ${fmtDate(prev['Date'])}`; }
+
+    const sumCol = k => data.reduce((s,r)=>s+(r[k]||0),0);
+    const totalAdded = sumCol('Added to stock');
+    const totalSold = sumCol('Sale');
+    const totalRepair = sumCol('Sent for repair');
+    const netSinceStart = total - rowTotal(first);
+    const avgTotal = Math.round(data.reduce((s,r)=>s+rowTotal(r),0)/data.length);
+    let topCat='—', topVal=-1;
+    catsOn.forEach(c=>{ const v=latest[c]||0; if(v>topVal){topVal=v; topCat=c;} });
+
+    body.innerHTML = `
+      <div class="kpi-row">
+        <div class="kpi"><div class="num">${total}</div><div class="lbl">pieces in stock (filtered)</div>${deltaTxt?`<div class="sub ${deltaCls}">${deltaTxt}</div>`:''}</div>
+        <div class="kpi"><div class="num">${totalAdded}</div><div class="lbl">added to stock, this range</div></div>
+        <div class="kpi"><div class="num">${totalSold}</div><div class="lbl">sold, this range</div></div>
+        <div class="kpi"><div class="num">${totalRepair}</div><div class="lbl">sent for repair, this range</div></div>
+        <div class="kpi"><div class="num">${netSinceStart>=0?'+':''}${netSinceStart}</div><div class="lbl">net change since ${fmtDate(first['Date'])}</div></div>
+        <div class="kpi"><div class="num">${topCat}</div><div class="lbl">largest category (${topVal})</div></div>
+        <div class="kpi"><div class="num">${avgTotal}</div><div class="lbl">average total stock</div></div>
+        <div class="kpi"><div class="num">${data.length}</div><div class="lbl">days in range</div></div>
+      </div>
+
+      <div class="section-label">Total stock, over time — area chart</div>
+      <div class="chart-box tall"><canvas id="ss-area"></canvas></div>
+
+      <div class="grid-2">
+        <div>
+          <div class="section-label">By category, latest — bar chart</div>
+          <div class="chart-box"><canvas id="ss-hbar"></canvas></div>
+        </div>
+        <div>
+          <div class="section-label">Stock composition, latest — pie chart</div>
+          <div class="chart-box"><canvas id="ss-pie"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-label">Added / sold / repaired — bar chart</div>
+      <div class="chart-box"><canvas id="ss-flow"></canvas></div>
+
+      <div class="section-label">Category share, over time — stacked area chart</div>
+      <div class="chart-box tall"><canvas id="ss-stackarea"></canvas></div>
+
+      <div class="section-label">Entries in range</div>
+      <table>
+        <thead><tr><th>Date</th><th>Added</th><th>Sold</th><th>Repair</th><th>Total (filtered)</th></tr></thead>
+        <tbody>${data.slice(-10).reverse().map(r=>`<tr><td>${fmtDate(r['Date'])}</td><td>${r['Added to stock']||0}</td><td>${r['Sale']||0}</td><td>${r['Sent for repair']||0}</td><td>${rowTotal(r)}</td></tr>`).join('')}</tbody>
+      </table>
+    `;
+
+    if(catsOn.length === 0){
+      body.querySelectorAll('.chart-box').forEach(el => el.innerHTML = '<div class="err">No category selected.</div>');
+      return;
+    }
+
+    // Area chart — total of active categories, over time
+    destroy(areaChart);
+    areaChart = new Chart(document.getElementById('ss-area').getContext('2d'), {
+      type:'line',
+      data:{ labels:data.map(r=>fmtDate(r['Date'])), datasets:[{ data:data.map(rowTotal), borderColor:'#6E2B3A', backgroundColor:'rgba(110,43,58,0.15)', borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.2, fill:true }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:10},color:'#7A7367'},grid:{display:false}}, y:{ticks:{font:{size:10},color:'#7A7367'},grid:{color:'#E4DCC9'}} } }
+    });
+
+    // Horizontal bar — category breakdown (active categories only)
+    destroy(hbarChart);
+    hbarChart = new Chart(document.getElementById('ss-hbar').getContext('2d'), {
+      type:'bar',
+      data:{ labels:catsOn, datasets:[{ data:catsOn.map(c=>latest[c]||0), backgroundColor:catsOn.map(c=>CAT_COLOR[c]) }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{font:{size:10},color:'#7A7367'},grid:{color:'#E4DCC9'}}, y:{ticks:{font:{size:11},color:'#2A2622'},grid:{display:false}} } }
+    });
+
+    // Pie chart — composition (active categories only, non-zero)
+    destroy(pieChart);
+    const pieCats = catsOn.filter(c=>(latest[c]||0)>0);
+    pieChart = new Chart(document.getElementById('ss-pie').getContext('2d'), {
+      type:'pie',
+      data:{ labels:pieCats, datasets:[{ data:pieCats.map(c=>latest[c]||0), backgroundColor:pieCats.map(c=>CAT_COLOR[c]), borderColor:'#FBF8F3', borderWidth:2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{font:{size:10},color:'#2A2622',boxWidth:10}}} }
+    });
+
+    // Grouped bar — flow, within filtered range (cap to last 15 for legibility)
+    destroy(flowChart);
+    const flowData = data.slice(-15);
+    flowChart = new Chart(document.getElementById('ss-flow').getContext('2d'), {
+      type:'bar',
+      data:{ labels:flowData.map(r=>fmtDate(r['Date'])), datasets:[
+        { label:'Added', data:flowData.map(r=>r['Added to stock']||0), backgroundColor:'#3F6B4A' },
+        { label:'Sold', data:flowData.map(r=>r['Sale']||0), backgroundColor:'#A8442F' },
+        { label:'Repaired', data:flowData.map(r=>r['Sent for repair']||0), backgroundColor:'#A9813F' }
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top', labels:{font:{size:10},boxWidth:10}}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:9},color:'#7A7367'},grid:{display:false}}, y:{ticks:{font:{size:10},color:'#7A7367'},grid:{color:'#E4DCC9'}} } }
+    });
+
+    // Stacked area chart — active categories' share over time
+    destroy(stackAreaChart);
+    stackAreaChart = new Chart(document.getElementById('ss-stackarea').getContext('2d'), {
+      type:'line',
+      data:{ labels:data.map(r=>fmtDate(r['Date'])), datasets:catsOn.map(c=>({ label:c, data:data.map(r=>r[c]||0), borderColor:CAT_COLOR[c], backgroundColor:CAT_COLOR[c]+'55', borderWidth:1.5, pointRadius:0, tension:0.2, fill:true })) },
+      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, plugins:{legend:{position:'top', labels:{font:{size:10},boxWidth:10}}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:9},color:'#7A7367'},grid:{display:false}}, y:{stacked:true, ticks:{font:{size:10},color:'#7A7367'},grid:{color:'#E4DCC9'}} } }
+    });
+  }
+
+  function setSnapshot(){
+    ALL_DATA = rowsToObjects(SNAPSHOT_ROWS);
+    refreshTimeEl.textContent = 'snapshot as of ' + fmtDate(SNAPSHOT_ROWS[SNAPSHOT_ROWS.length-1][0]);
+    syncNoteEl.textContent = 'Showing last synced snapshot — live refresh may be blocked in this preview. Open the downloaded file in your own browser tab for live sync.';
+    renderAll();
+  }
+
+  async function tryLive(){
+    try{
+      const res = await fetch(CSV_URL, {cache:'no-store'});
+      if(!res.ok) throw new Error('fetch failed');
+      const text = await res.text();
+      const data = parseCSV(text);
+      ALL_DATA = data;
+      refreshTimeEl.textContent = 'live, refreshed ' + new Date().toLocaleTimeString();
+      syncNoteEl.textContent = '';
+      renderAll();
+    }catch(e){ /* keep showing current data */ }
+  }
+
+  // Filter bar wiring
+  document.querySelectorAll('.range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      rangeFilter = btn.dataset.range;
+      renderAll();
+    });
+  });
+  document.getElementById('ss-cat-all').addEventListener('click', () => {
+    activeCats = new Set(CATEGORIES);
+    renderAll();
+  });
+  document.getElementById('ss-refresh').addEventListener('click', tryLive);
+
+  function loadScript(src){
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  Promise.all([
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js'),
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js')
+  ]).then(() => {
+    setSnapshot();
+    tryLive();
+    setInterval(tryLive, 60000);
+  }).catch(err => {
+    body.innerHTML = '<div class="err">Couldn\'t load charting libraries (' + err.message + '). Try refreshing the page.</div>';
+  });
+})();
+</script>
