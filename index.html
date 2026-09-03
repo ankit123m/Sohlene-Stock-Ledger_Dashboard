@@ -65,11 +65,17 @@
   #sohlene-dash input[type="date"]:focus{ outline:none; border-color:var(--burgundy); }
 
   #sohlene-dash .kpi-row{
-    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0;
-    border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); margin-bottom:32px;
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:32px;
   }
-  #sohlene-dash .kpi{ padding:16px 18px; border-right:1px solid var(--line); }
-  #sohlene-dash .kpi:last-child{ border-right:none; }
+  #sohlene-dash .kpi{
+    padding:18px 18px; border:1px solid var(--line); border-radius:10px;
+    background:#FFFFFF; box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  }
+  #sohlene-dash .kpi-icon{
+    width:30px; height:30px; border-radius:7px; background:var(--gold-soft); color:var(--burgundy);
+    display:flex; align-items:center; justify-content:center; margin-bottom:10px;
+  }
+  #sohlene-dash .kpi-icon svg{ width:16px; height:16px; }
   #sohlene-dash .kpi .num{ font-family:'Cormorant Garamond', serif; font-size:34px; font-weight:600; color:var(--burgundy); line-height:1; }
   #sohlene-dash .kpi .lbl{ font-size:11.5px; color:#6B7280; margin-top:6px; }
   #sohlene-dash .kpi .sub{ font-size:11px; margin-top:3px; font-weight:600; }
@@ -141,6 +147,18 @@
   const HEADERS = ["Date","Rings","Earrings","Bracelet","Bangle","Necklace","Pendant","RFS","Stone","Approval","Ring Collet","Detachable rings","Added to stock","Sent for repair","Sale","Total"];
   const CATEGORIES = ["Rings","Earrings","Bracelet","Bangle","Necklace","Pendant","RFS","Stone","Ring Collet","Detachable rings"];
   const PALETTE = ['#2563EB','#0EA5E9','#059669','#F59E0B','#8B5CF6','#64748B','#EC4899','#14B8A6','#F97316','#6366F1'];
+
+  // Small inline icons for the KPI cards — no external icon library needed.
+  const ICONS = {
+    box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 12.6L12 21.2 2.8 12 11.4 3.4H20.6z"/><circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none"/></svg>',
+    wrench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 11-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 015.4-5.4l-3 3-2-2 3-3z"/></svg>',
+    trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6z"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>'
+  };
   const CAT_COLOR = {}; CATEGORIES.forEach((c,i)=>CAT_COLOR[c]=PALETTE[i%PALETTE.length]);
 
   // Snapshot captured from the live sheet — always shown, replaced automatically if a live fetch succeeds.
@@ -343,14 +361,14 @@
 
     body.innerHTML = `
       <div class="kpi-row">
-        <div class="kpi"><div class="num">${total}</div><div class="lbl">pieces in stock (filtered)</div>${deltaTxt?`<div class="sub ${deltaCls}">${deltaTxt}</div>`:''}</div>
-        <div class="kpi"><div class="num">${totalAdded}</div><div class="lbl">added to stock, this range</div></div>
-        <div class="kpi"><div class="num">${totalSold}</div><div class="lbl">sold, this range</div></div>
-        <div class="kpi"><div class="num">${totalRepair}</div><div class="lbl">sent for repair, this range</div></div>
-        <div class="kpi"><div class="num">${netSinceStart>=0?'+':''}${netSinceStart}</div><div class="lbl">net change since ${fmtDate(first['Date'])}</div></div>
-        <div class="kpi"><div class="num">${topCat}</div><div class="lbl">largest category (${topVal})</div></div>
-        <div class="kpi"><div class="num">${avgTotal}</div><div class="lbl">average total stock</div></div>
-        <div class="kpi"><div class="num">${data.length}</div><div class="lbl">days in range</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.box}</div><div class="num">${total}</div><div class="lbl">pieces in stock (filtered)</div>${deltaTxt?`<div class="sub ${deltaCls}">${deltaTxt}</div>`:''}</div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.plus}</div><div class="num">${totalAdded}</div><div class="lbl">added to stock, this range</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.tag}</div><div class="num">${totalSold}</div><div class="lbl">sold, this range</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.wrench}</div><div class="num">${totalRepair}</div><div class="lbl">sent for repair, this range</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.trend}</div><div class="num">${netSinceStart>=0?'+':''}${netSinceStart}</div><div class="lbl">net change since ${fmtDate(first['Date'])}</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.star}</div><div class="num">${topCat}</div><div class="lbl">largest category (${topVal})</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.chart}</div><div class="num">${avgTotal}</div><div class="lbl">average total stock</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.calendar}</div><div class="num">${data.length}</div><div class="lbl">days in range</div></div>
       </div>
 
       <div class="section-label">Total stock, over time — area chart</div>
