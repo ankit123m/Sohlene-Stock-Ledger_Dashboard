@@ -1,6 +1,8 @@
-<img width="1047" height="776" alt="image" src="https://github.com/user-attachments/assets/118ff1c4-4f14-4642-98d6-23f3239662e3" />
+<img width="1260" height="801" alt="image" src="https://github.com/user-attachments/assets/533fda73-d2c6-4701-8c6c-7904ff5a2d7e" />
+
 
 <img width="431" height="431" alt="4wr6r7hp-qr" src="https://github.com/user-attachments/assets/df72d86f-62cb-4205-ac64-97a2feb9644e" />
+
 
 [README.md](https://github.com/user-attachments/files/31724166/README.md)
 # Sohlene Stock Ledger
