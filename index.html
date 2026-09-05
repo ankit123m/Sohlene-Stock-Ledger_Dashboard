@@ -36,6 +36,17 @@
   .sidebar .nav-item svg{ width:16px; height:16px; flex-shrink:0; }
   .sidebar .nav-item.active{ background:var(--gold-soft); color:var(--burgundy); font-weight:600; }
 
+  .sidebar-user-card{
+    margin-top:auto; padding:12px; border:1px solid var(--line); background:#F8FAFC; border-radius:12px;
+  }
+  .sidebar-user-row{display:flex;align-items:center;gap:10px;min-width:0;}
+  .sidebar-user-avatar{width:34px;height:34px;border-radius:50%;background:var(--gold-soft);color:var(--burgundy);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
+  .sidebar-user-info{min-width:0;flex:1;}
+  .sidebar-user-name{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sidebar-user-id{font-size:10px;color:#64748B;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sidebar-logout-btn{width:100%;margin-top:9px;border:1px solid var(--line);background:#fff;color:#475569;border-radius:8px;padding:7px 9px;font:700 11px Inter,sans-serif;cursor:pointer;}
+  .sidebar-logout-btn:hover{background:#F1F5F9;}
+  .sidebar-user-role{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#6366F1;font-weight:700;margin-top:2px;}
   .main-col{ flex:1; min-width:0; padding:22px 30px 44px; max-width:1500px; }
   .topbar{ display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:22px; }
   .topbar .crumb{ font-size:12px; color:#6B7280; margin-bottom:3px; }
@@ -77,6 +88,25 @@
   }
   #sohlene-dash .refresh-btn:hover{ opacity:0.88; }
   #sohlene-dash .sync-note{ font-size:11px; color:var(--gold); margin-top:2px; max-width:240px; }
+
+  #sohlene-dash .export-bar{
+    display:flex; justify-content:flex-end; gap:8px; margin:0 0 14px; flex-wrap:wrap;
+  }
+  #sohlene-dash .export-btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink); font-family:'Inter';
+    font-weight:700; font-size:12px; padding:8px 13px; cursor:pointer; border-radius:8px;
+    transition:opacity .15s, transform .05s;
+  }
+  #sohlene-dash .export-btn:hover{ opacity:.88; }
+  #sohlene-dash .export-btn:active{ transform:translateY(1px); }
+  #sohlene-dash .export-btn.pdf{ background:var(--burgundy); border-color:var(--burgundy); color:#fff; }
+  #sohlene-dash .export-btn.excel{ background:#176b4d; border-color:#176b4d; color:#fff; }
+  #sohlene-dash.exporting .export-bar{ display:none !important; }
+  @media print{
+    #sohlene-dash .export-bar, #sohlene-dash .filter-bar{ display:none !important; }
+    .sidebar, .topbar .right, .hamburger-btn, .sidebar-backdrop{ display:none !important; }
+    .main-col{ padding:10px !important; max-width:none !important; }
+  }
 
   /* Filter bar */
   #sohlene-dash .filter-bar{
@@ -183,9 +213,105 @@
   #sohlene-dash .source-panel input[type="file"]{ font-size:13px; font-family:'Inter'; }
   #sohlene-dash .source-status{ font-size:12.5px; margin-top:12px; min-height:16px; font-weight:600; }
   #sohlene-dash .source-note{ font-size:11.5px; color:#6B7280; line-height:1.6; margin:18px 0 0; padding-top:16px; border-top:1px solid #F3F4F6; }
+
+  /* ---- Login / user accounts ---- */
+  #ss-login{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f8fafc,#eef2ff);padding:20px;}
+  #ss-login .login-card{width:min(420px,100%);background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 20px 60px rgba(15,23,42,.15);padding:30px;}
+  #ss-login .login-brand{font-size:24px;font-weight:800;color:#1f2937;margin-bottom:4px;}
+  #ss-login .login-sub{font-size:12px;color:#64748b;margin-bottom:26px;}
+  #ss-login label{display:block;font-size:12px;font-weight:700;color:#374151;margin:14px 0 6px;}
+  #ss-login input{width:100%;padding:11px 12px;border:1px solid #d1d5db;border-radius:9px;font:14px Inter,sans-serif;outline:none;}
+  #ss-login input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12);}
+  #ss-login .login-btn{width:100%;margin-top:20px;padding:11px 14px;border:0;border-radius:9px;background:#6366f1;color:#fff;font:700 13px Inter,sans-serif;cursor:pointer;}
+  #ss-login .login-btn:hover{opacity:.9;}
+  #ss-login .login-error{min-height:18px;margin-top:10px;font-size:12px;color:#dc2626;}
+  #ss-login .login-note{margin-top:18px;padding:10px 12px;border-radius:9px;background:#f8fafc;color:#64748b;font-size:10.5px;line-height:1.5;}
+  #ss-login .auth-switch{display:flex;gap:6px;margin:0 0 18px;background:#f8fafc;padding:4px;border-radius:10px;}
+  #ss-login .auth-tab{flex:1;border:0;background:transparent;border-radius:7px;padding:9px 8px;font:700 12px Inter,sans-serif;color:#64748b;cursor:pointer;}
+  #ss-login .auth-tab.active{background:#fff;color:#4f46e5;box-shadow:0 1px 4px rgba(15,23,42,.08);}
+  #ss-login .signup-help{font-size:10.5px;color:#64748b;line-height:1.5;margin-top:8px;}
+  #ss-login .hidden{display:none!important;}
+  .user-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:11px;color:#475569;font-weight:600;}
+  .user-badge .role{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#6366f1;}
+  .logout-btn{border:1px solid var(--line);background:#fff;color:#475569;border-radius:8px;padding:7px 10px;font:700 11px Inter,sans-serif;cursor:pointer;}
+  .logout-btn:hover{background:#f8fafc;}
+  /* Users section */
+  .users-panel{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);padding:18px;}
+  .users-profile{display:flex;align-items:center;gap:12px;padding:14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;margin-bottom:18px;}
+  .users-avatar{width:42px;height:42px;border-radius:50%;background:var(--gold-soft);color:var(--burgundy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;}
+  .users-profile .name{font-size:13px;font-weight:700;color:var(--ink);}
+  .users-profile .meta{font-size:11px;color:#64748B;margin-top:3px;}
+  .users-table-wrap{overflow-x:auto;}
+  .users-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .users-table th{padding:10px 12px;text-align:left;background:#F8FAFC;color:#64748B;font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);}
+  .users-table td{padding:11px 12px;border-bottom:1px solid #F1F5F9;color:#334155;vertical-align:top;}
+  .users-table tr:last-child td{border-bottom:0;}
+  .user-role-pill{display:inline-flex;padding:4px 8px;border-radius:999px;background:#EEF2FF;color:#4F46E5;font-size:9px;font-weight:700;text-transform:uppercase;}
+  .user-source{max-width:300px;overflow-wrap:anywhere;color:#64748B;}
+  .users-note{font-size:11px;color:#64748B;line-height:1.55;margin-top:14px;}
+  .password-wrap{position:relative;display:flex;align-items:center;}
+  .password-wrap input{width:100%;padding-right:44px;}
+  .password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;padding:7px;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+  .password-toggle:hover{background:#f1f5f9;color:#0f172a;}
+  .password-toggle svg{width:20px;height:20px;}
+
+  @media(max-width:640px){#ss-login .login-card{padding:24px;}}
 </style>
 </head>
 <body>
+
+<div id="ss-login" aria-label="Dashboard authentication">
+  <div class="login-card">
+    <div class="login-brand">Sohlene</div>
+    <div class="login-sub">Stock Ledger · User account</div>
+    <div class="auth-switch">
+      <button class="auth-tab active" id="ss-tab-login" type="button">Login</button>
+      <button class="auth-tab" id="ss-tab-signup" type="button">Create account</button>
+    </div>
+
+    <form id="ss-login-form">
+      <label for="ss-login-user">User ID</label>
+      <input id="ss-login-user" autocomplete="username" required placeholder="Enter user ID">
+      <label for="ss-login-pass">Password</label>
+      <div class="password-wrap">
+        <input id="ss-login-pass" type="password" autocomplete="current-password" required placeholder="Enter password">
+        <button class="password-toggle" type="button" data-target="ss-login-pass" aria-label="Show password" title="Show password">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+        </button>
+      </div>
+      <button class="login-btn" type="submit">Sign in</button>
+      <div class="login-error" id="ss-login-error"></div>
+    </form>
+
+    <form id="ss-signup-form" class="hidden">
+      <label for="ss-signup-name">Name</label>
+      <input id="ss-signup-name" autocomplete="name" required placeholder="Your name">
+      <label for="ss-signup-user">Create User ID</label>
+      <input id="ss-signup-user" autocomplete="username" required placeholder="Choose a user ID" pattern="[A-Za-z0-9._-]{3,30}">
+      <label for="ss-signup-pass">Create Password</label>
+      <div class="password-wrap">
+        <input id="ss-signup-pass" type="password" autocomplete="new-password" required minlength="6" placeholder="Minimum 6 characters">
+        <button class="password-toggle" type="button" data-target="ss-signup-pass" aria-label="Show password" title="Show password">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+        </button>
+      </div>
+      <label for="ss-signup-pass2">Confirm Password</label>
+      <div class="password-wrap">
+        <input id="ss-signup-pass2" type="password" autocomplete="new-password" required minlength="6" placeholder="Re-enter password">
+        <button class="password-toggle" type="button" data-target="ss-signup-pass2" aria-label="Show password" title="Show password">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+        </button>
+      </div>
+      <label for="ss-signup-source">Your Data Source <span style="font-weight:500;color:#94a3b8;">(optional)</span></label>
+      <input id="ss-signup-source" type="text" placeholder="Google Sheet or CSV URL">
+      <div class="signup-help">If you enter a Google Sheet/CSV URL, this account will use that dataset after login. The Google Sheet must be published/exportable as CSV.</div>
+      <button class="login-btn" type="submit">Create account</button>
+      <div class="login-error" id="ss-signup-error"></div>
+    </form>
+
+    <div class="login-note">Create your account once, then use the same User ID and Password next time. Accounts are stored in this browser. For real multi-device/company security, use server-side authentication and a database.</div>
+  </div>
+</div>
 
 <div class="app-shell">
   <aside class="sidebar">
@@ -213,11 +339,27 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
         Reports
       </div>
+      <div class="nav-item" data-tab="users">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20c.7-3.2 2.5-5 5.5-5s4.8 1.8 5.5 5"/><path d="M16 5.5a3 3 0 010 5.8M16 15c2.2.1 3.7 1.5 4.5 4"/></svg>
+        Users
+      </div>
       <div class="nav-item" data-tab="settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
         Settings
       </div>
     </nav>
+
+    <div class="sidebar-user-card" id="ss-sidebar-user" style="display:none;">
+      <div class="sidebar-user-row">
+        <div class="sidebar-user-avatar" id="ss-sidebar-avatar">U</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="ss-sidebar-name">User</div>
+          <div class="sidebar-user-id" id="ss-sidebar-id">@user</div>
+          <div class="sidebar-user-role" id="ss-sidebar-role">USER</div>
+        </div>
+      </div>
+      <button class="sidebar-logout-btn" id="ss-sidebar-logout" type="button">Logout</button>
+    </div>
   </aside>
   <div class="sidebar-backdrop" id="ss-backdrop"></div>
 
@@ -238,11 +380,17 @@
           <span id="ss-refreshtime">—</span>
           <div class="sync-note" id="ss-syncnote"></div>
         </div>
-        <div><button class="refresh-btn" id="ss-refresh">Try live refresh</button></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="refresh-btn" id="ss-refresh">Try live refresh</button>
+        </div>
       </div>
     </div>
 
     <div id="sohlene-dash">
+      <div class="export-bar" aria-label="Download dashboard">
+        <button class="export-btn pdf" id="ss-download-pdf" type="button">Download PDF</button>
+                <button class="export-btn excel" id="ss-download-excel" type="button">Download Excel Raw Data</button>
+      </div>
       <div class="filter-bar">
         <div class="filter-group">
           <span class="filter-label">Show</span>
@@ -273,6 +421,53 @@
 (function(){
   const SHEET_ID = "1VOlPAg-mcfiwoXc7wgEym7FmQf9bVTaUONWzwawQJsk";
   const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+
+  // ---- USER ACCOUNTS ----
+  // Change these accounts and dataset URLs to match your team.
+  // sourceUrl can be a Google Sheet link or any URL returning CSV.
+  // allowedCategories controls which stock categories that user can see.
+  // Leave sourceUrl blank to use the built-in snapshot until you add the user's dataset URL.
+  document.querySelectorAll('.password-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      if(!input) return;
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+      btn.setAttribute('title', showing ? 'Show password' : 'Hide password');
+    });
+  });
+
+  const DEFAULT_USER_ACCOUNTS = {
+    admin: { password: 'admin123', name: 'Administrator', role: 'admin', sourceUrl: CSV_URL, allowedCategories: null },
+    manager: { password: 'manager123', name: 'Inventory Manager', role: 'user', sourceUrl: '', allowedCategories: ['Rings','Earrings','Bracelet','Bangle','Necklace','Pendant'] },
+    staff: { password: 'staff123', name: 'Stock Staff', role: 'user', sourceUrl: '', allowedCategories: ['Rings','Earrings','Bracelet'] }
+  };
+  const USER_STORAGE_KEY = 'sohlene_dashboard_users_v1';
+
+  function loadUserAccounts(){
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || '{}') || {}; } catch(e) {}
+    return Object.assign({}, DEFAULT_USER_ACCOUNTS, saved);
+  }
+
+  function saveUserAccount(id, account){
+    const saved = (() => { try { return JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || '{}') || {}; } catch(e) { return {}; } })();
+    saved[id] = account;
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(saved));
+  }
+
+  async function hashPassword(value){
+    if(window.crypto && crypto.subtle){
+      const data = new TextEncoder().encode(value);
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+    return value;
+  }
+
+  let USER_ACCOUNTS = loadUserAccounts();
+  let currentUser = null;
   let ACTIVE_CSV_URL = CSV_URL;
   let dataSourceMode = 'sheet';           // 'sheet' | 'url' | 'csv-file' | 'excel-file'
   let dataSourceLabel = 'Google Sheet (default)';
@@ -503,7 +698,8 @@
 
   function applySchema(schema, label){
     ALL_DATA = schema.rows;
-    CATEGORIES = schema.categories;
+    const allowed = currentUser && Array.isArray(currentUser.allowedCategories) ? currentUser.allowedCategories : null;
+    CATEGORIES = allowed ? schema.categories.filter(c => allowed.includes(c)) : schema.categories;
     CAT_COLOR = schema.catColor;
     MOVEMENT_COLS = schema.movementCols;
     BAR_EXCLUDE = schema.barExclude;
@@ -520,7 +716,7 @@
   let customEnd = null;
   let activeCats = new Set(CATEGORIES);  // categories currently toggled on
   let boundsSet = false;
-  let currentTab = 'dashboard';           // 'dashboard' | 'entries' | 'categories' | 'reports' | 'settings'
+  let currentTab = 'dashboard';           // 'dashboard' | 'entries' | 'categories' | 'reports' | 'users' | 'settings'
   let areaChart, pieChart, hbarChart, flowChart, stackAreaChart;
 
   function parseDMY(str){
@@ -593,9 +789,10 @@
     render(data);
   }
 
-  const TAB_TITLES = { dashboard:'Dashboard', entries:'Stock Entries', categories:'Categories', reports:'Reports', settings:'Settings' };
+  const TAB_TITLES = { dashboard:'Dashboard', entries:'Stock Entries', categories:'Categories', reports:'Reports', users:'Users', settings:'Settings' };
 
   function render(data){
+    if(currentTab === 'users'){ renderUsers(); return; }
     if(currentTab === 'settings'){ renderSettings(); return; }
     if(!data.length){ body.innerHTML = '<div class="err">No stock rows in this range.</div>'; return; }
     const catsOn = CATEGORIES.filter(c => activeCats.has(c));
@@ -688,7 +885,7 @@
     areaChart = new Chart(document.getElementById('ss-area').getContext('2d'), {
       type:'line',
       data:{ labels:data.map(r=>fmtDate(r['Date'])), datasets:[{ data:data.map(rowTotal), borderColor:'#6366F1', backgroundColor:'rgba(99,102,241,0.12)', borderWidth:2, pointRadius:0, pointHoverRadius:5, pointHitRadius:20, tension:0.2, fill:true }] },
-      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, plugins:{legend:{display:false}, tooltip:{enabled:true}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:10},color:'#6B7280'},grid:{display:false}}, y:{ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}} } }
+      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, plugins:{legend:{display:false}, tooltip:{enabled:true}, datalabels:{display:(ctx)=>ctx.dataset.data[ctx.dataIndex] !== 0, color:'#1F2937', anchor:'end', align:'top', offset:3, font:{size:8,weight:'600'}, formatter:(v)=>v}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:10},color:'#6B7280'},grid:{display:false}}, y:{ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}} } }
     });
     }
 
@@ -705,7 +902,7 @@
     hbarChart = new Chart(document.getElementById('ss-hbar').getContext('2d'), {
       type:'bar',
       data:{ labels:barCats, datasets:[{ data:barCats.map(c=>latest[c]||0), backgroundColor:barCats.map(c=>CAT_COLOR[c]) }] },
-      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}}, y:{ticks:{font:{size:11},color:'#1F2937'},grid:{display:false}} } }
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{display:(ctx)=>ctx.dataset.data[ctx.dataIndex] !== 0, color:'#1F2937', anchor:'end', align:'right', offset:3, font:{size:9,weight:'600'}, formatter:(v)=>v}}, scales:{ x:{ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}}, y:{ticks:{font:{size:11},color:'#1F2937'},grid:{display:false}} } }
     });
     }
 
@@ -716,7 +913,7 @@
     pieChart = new Chart(document.getElementById('ss-pie').getContext('2d'), {
       type:'pie',
       data:{ labels:pieCats, datasets:[{ data:pieCats.map(c=>latest[c]||0), backgroundColor:pieCats.map(c=>CAT_COLOR[c]), borderColor:'#FFFFFF', borderWidth:2 }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{font:{size:10},color:'#1F2937',boxWidth:10}}} }
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{font:{size:10},color:'#1F2937',boxWidth:10}}, datalabels:{display:true, color:'#1F2937', font:{size:9,weight:'700'}, formatter:(v,ctx)=>`${ctx.chart.data.labels[ctx.dataIndex]}: ${v}`}} }
     });
     }
 
@@ -731,7 +928,7 @@
     flowChart = new Chart(document.getElementById('ss-flow').getContext('2d'), {
       type:'bar',
       data:{ labels:flowData.map(r=>fmtDate(r['Date'])), datasets:flowDatasets },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top', labels:{font:{size:10},boxWidth:10}}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:9},color:'#6B7280'},grid:{display:false}}, y:{ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}} } }
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top', labels:{font:{size:10},boxWidth:10}}, datalabels:{display:(ctx)=>ctx.dataset.data[ctx.dataIndex] !== 0, color:'#1F2937', anchor:'end', align:'top', offset:2, font:{size:7,weight:'600'}, formatter:(v)=>v}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:9},color:'#6B7280'},grid:{display:false}}, y:{ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}} } }
     });
     }
 
@@ -741,12 +938,77 @@
     stackAreaChart = new Chart(document.getElementById('ss-stackarea').getContext('2d'), {
       type:'line',
       data:{ labels:data.map(r=>fmtDate(r['Date'])), datasets:catsOn.map(c=>({ label:c, data:data.map(r=>r[c]||0), borderColor:CAT_COLOR[c], backgroundColor:CAT_COLOR[c]+'55', borderWidth:1.5, pointRadius:0, tension:0.2, fill:true })) },
-      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, plugins:{legend:{position:'top', labels:{font:{size:10},boxWidth:10}}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:9},color:'#6B7280'},grid:{display:false}}, y:{stacked:true, ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}} } }
+      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, plugins:{legend:{position:'top', labels:{font:{size:10},boxWidth:10}}, datalabels:{display:(ctx)=>ctx.dataset.data[ctx.dataIndex] !== 0, color:'#1F2937', anchor:'end', align:'top', offset:2, font:{size:7,weight:'600'}, formatter:(v)=>v}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:9},color:'#6B7280'},grid:{display:false}}, y:{stacked:true, ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}} } }
     });
     }
   }
 
+  function renderUsers(){
+    if(!currentUser){
+      body.innerHTML = '<div class="err">Please sign in to view users.</div>';
+      return;
+    }
+
+    USER_ACCOUNTS = loadUserAccounts();
+    const accounts = Object.entries(USER_ACCOUNTS).sort((a,b) => {
+      if(a[0] === currentUser.id) return -1;
+      if(b[0] === currentUser.id) return 1;
+      return a[0].localeCompare(b[0]);
+    });
+    const initials = (currentUser.name || currentUser.id || 'U').trim().split(/\s+/).slice(0,2).map(x => x[0]).join('').toUpperCase();
+    const sourceLabel = currentUser.sourceUrl ? currentUser.sourceUrl : 'Built-in snapshot / not assigned';
+
+    let rows = '';
+    if(currentUser.role === 'admin'){
+      rows = accounts.map(([id, account]) => `
+        <tr>
+          <td><b>${id}</b></td>
+          <td>${account.name || id}</td>
+          <td><span class="user-role-pill">${account.role || 'user'}</span></td>
+          <td class="user-source">${account.sourceUrl || 'Built-in snapshot'}</td>
+          <td>${account.allowedCategories ? account.allowedCategories.length + ' categories' : 'All categories'}</td>
+        </tr>`).join('');
+    }
+
+    body.innerHTML = `
+      <div class="section-label">User account</div>
+      <div class="users-panel">
+        <div class="users-profile">
+          <div class="users-avatar">${initials || 'U'}</div>
+          <div>
+            <div class="name">${currentUser.name || currentUser.id}</div>
+            <div class="meta">User ID: <b>${currentUser.id}</b> · Role: <b>${currentUser.role || 'user'}</b></div>
+          </div>
+        </div>
+        <div class="settings-row"><span class="k">Your dataset</span><span class="v" style="max-width:480px;overflow-wrap:anywhere;">${sourceLabel}</span></div>
+        <div class="settings-row"><span class="k">Category access</span><span class="v">${currentUser.allowedCategories ? currentUser.allowedCategories.join(', ') : 'All categories'}</span></div>
+      </div>
+
+      ${currentUser.role === 'admin' ? `
+        <div class="section-label" style="margin-top:26px;">All users</div>
+        <div class="users-panel">
+          <div class="users-table-wrap">
+            <table class="users-table">
+              <thead><tr><th>User ID</th><th>Name</th><th>Role</th><th>Assigned dataset</th><th>Category access</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          <div class="users-note">Passwords are never displayed here. New accounts created from the login screen are stored in this browser and can have their own dataset URL.</div>
+        </div>` : `
+        <div class="section-label" style="margin-top:26px;">Access</div>
+        <div class="users-panel"><div style="font-size:12px;color:#64748B;line-height:1.6;">You can view your own account and assigned dataset. User administration is available only to an administrator.</div></div>`}
+    `;
+  }
+
   function renderSettings(){
+    if(!currentUser || currentUser.role !== 'admin'){
+      body.innerHTML = `
+        <div class="section-label">Access restricted</div>
+        <div class="settings-panel">
+          <div style="font-size:13px;color:#475569;line-height:1.6;">Only an administrator can change dashboard data sources. Your account is limited to its assigned dataset and categories.</div>
+        </div>`;
+      return;
+    }
     const lastRow = ALL_DATA.length ? ALL_DATA[ALL_DATA.length-1] : null;
     const sourceKindLabel = { sheet:'Google Sheet', url:'URL / API (CSV)', 'csv-file':'Uploaded CSV file', 'excel-file':'Uploaded Excel file' }[dataSourceMode];
     const schemaLabel = schemaMode === 'template' ? 'Standard template (matches your original sheet)' : 'Auto-detected from file columns';
@@ -993,15 +1255,337 @@
     });
   }
 
+  // ---- Dashboard downloads ----
+  function exportFileStamp(){
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  }
+
+  async function downloadPDF(){
+    const dash = document.getElementById('sohlene-dash');
+    if(!dash || typeof html2canvas === 'undefined' || !window.jspdf){
+      alert('PDF export libraries are still loading. Please try again in a moment.');
+      return;
+    }
+
+    dash.classList.add('exporting');
+    const oldScroll = window.scrollY;
+    window.scrollTo(0,0);
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
+      const margin = 7;
+      const pageW = 297 - margin * 2;
+      const pageH = 210 - margin * 2;
+
+      // 1) Add the complete dashboard view first.
+      await new Promise(r => setTimeout(r, 250));
+      const dashboardCanvas = await html2canvas(dash, {
+        scale: Math.min(2, window.devicePixelRatio || 1.5),
+        useCORS: true,
+        backgroundColor: '#f7f7f8',
+        logging: false
+      });
+
+      const dashboardImg = dashboardCanvas.toDataURL('image/jpeg', 0.92);
+      const dashboardH = dashboardCanvas.height * pageW / dashboardCanvas.width;
+      if(dashboardH <= pageH){
+        pdf.addImage(dashboardImg, 'JPEG', margin, margin, pageW, dashboardH, undefined, 'FAST');
+      } else {
+        // Slice the dashboard into A4 pages without duplicating the full image.
+        const pxPerMm = dashboardCanvas.width / pageW;
+        const slicePx = Math.floor(pageH * pxPerMm);
+        let yPx = 0;
+        let first = true;
+        while(yPx < dashboardCanvas.height){
+          if(!first) pdf.addPage();
+          first = false;
+          const hPx = Math.min(slicePx, dashboardCanvas.height - yPx);
+          const slice = document.createElement('canvas');
+          slice.width = dashboardCanvas.width;
+          slice.height = hPx;
+          slice.getContext('2d').drawImage(
+            dashboardCanvas, 0, yPx, dashboardCanvas.width, hPx,
+            0, 0, dashboardCanvas.width, hPx
+          );
+          const sliceImg = slice.toDataURL('image/jpeg', 0.92);
+          pdf.addImage(sliceImg, 'JPEG', margin, margin, pageW, hPx / pxPerMm, undefined, 'FAST');
+          yPx += hPx;
+        }
+      }
+
+      // 2) Add every graph as its own PDF page.
+      const graphs = [
+        ['Total Stock Over Time', 'ss-area'],
+        ['Stock by Category', 'ss-hbar'],
+        ['Stock Composition', 'ss-pie'],
+        ['Stock Movement', 'ss-flow'],
+        ['Category Composition Over Time', 'ss-stackarea']
+      ];
+
+      let graphCount = 0;
+      for(const [title, id] of graphs){
+        const canvas = document.getElementById(id);
+        if(!canvas || !canvas.width || !canvas.height) continue;
+
+        pdf.addPage();
+        pdf.setFontSize(16);
+        pdf.text(title, margin, margin + 5);
+
+        const graphImg = canvas.toDataURL('image/png');
+        const top = margin + 10;
+        const maxW = pageW;
+        const maxH = pageH - 10;
+        const scale = Math.min(maxW / canvas.width, maxH / canvas.height);
+        const w = canvas.width * scale;
+        const h = canvas.height * scale;
+        const x = margin + (pageW - w) / 2;
+        pdf.addImage(graphImg, 'PNG', x, top + (maxH - h) / 2, w, h, undefined, 'FAST');
+        graphCount++;
+      }
+
+      if(graphCount === 0){
+        alert('The dashboard was exported, but no graph canvases were available.');
+      }
+
+      pdf.save(`Sohlene-Stock-Dashboard-${exportFileStamp()}.pdf`);
+    } catch(err) {
+      console.error(err);
+      alert('Could not create the PDF. Please try again.');
+    } finally {
+      dash.classList.remove('exporting');
+      window.scrollTo(0, oldScroll);
+    }
+  }
+
+  function downloadExcel(){
+    if(typeof XLSX === 'undefined'){
+      alert('Excel export library is still loading. Please try again in a moment.');
+      return;
+    }
+    // Export the ORIGINAL row-level source data so the workbook can be
+    // connected/imported later into Power BI, Excel Power Query or Sheets.
+    const rawData = getFilteredData();
+    const catsOn = CATEGORIES.filter(c => activeCats.has(c));
+    const latest = rawData.length ? rawData[rawData.length-1] : null;
+    const rowTotal = r => catsOn.reduce((sum,c) => sum + (Number(r[c]) || 0), 0);
+
+    // Keep every original field/column exactly as it exists in the source rows.
+    const rawRows = rawData.map(r => ({...r}));
+
+    // A separate table contains the graph-ready summary without replacing raw data.
+    const graphRows = rawData.map(r => {
+      const o = {Date: r['Date']};
+      catsOn.forEach(c => o[c] = Number(r[c]) || 0);
+      if(MOVEMENT_COLS.added) o['Added'] = Number(r[MOVEMENT_COLS.added]) || 0;
+      if(MOVEMENT_COLS.sale) o['Sold'] = Number(r[MOVEMENT_COLS.sale]) || 0;
+      if(MOVEMENT_COLS.repair) o['Sent for repair'] = Number(r[MOVEMENT_COLS.repair]) || 0;
+      o['Total (filtered)'] = rowTotal(r);
+      return o;
+    });
+
+    const summary = latest ? [
+      ['Sohlene Stock Dashboard',''],
+      ['Report date', fmtDate(latest['Date'])],
+      ['Range', rangeFilter === 'all' ? 'All time' : rangeFilter === 'custom' ? `${customStart || ''} to ${customEnd || ''}` : `Last ${rangeFilter} days`],
+      ['Selected categories', catsOn.join(', ') || 'None'],
+      ['Latest total stock', rowTotal(latest)],
+      ['Rows/days in range', rawData.length],
+      ['Purpose', 'Raw Data sheet is the row-level source data for future Power BI/Excel/Sheets connections.']
+    ] : [['Sohlene Stock Dashboard','No data']];
+
+    const wb = XLSX.utils.book_new();
+    const wsSummary = XLSX.utils.aoa_to_sheet(summary);
+    const wsRaw = XLSX.utils.json_to_sheet(rawRows);
+    const wsGraph = XLSX.utils.json_to_sheet(graphRows);
+    wsSummary['!cols'] = [{wch:28},{wch:70}];
+    wsRaw['!cols'] = Object.keys(rawRows[0] || {Date:''}).map(k => ({wch: Math.max(12, Math.min(28, String(k).length + 3))}));
+    wsGraph['!cols'] = Object.keys(graphRows[0] || {Date:''}).map(k => ({wch: Math.max(12, Math.min(28, String(k).length + 3))}));
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Dashboard Summary');
+    XLSX.utils.book_append_sheet(wb, wsRaw, 'Raw Data');
+    XLSX.utils.book_append_sheet(wb, wsGraph, 'Graph Data');
+    XLSX.writeFile(wb, `Sohlene-Stock-Raw-Data-${exportFileStamp()}.xlsx`);
+  }
+
+  document.getElementById('ss-download-pdf').addEventListener('click', downloadPDF);
+  document.getElementById('ss-download-excel').addEventListener('click', downloadExcel);
+
   Promise.all([
     loadScript('https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js'),
-    loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js')
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js'),
+    loadScript('https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js'),
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'),
   ]).then(() => {
-    setSnapshot();
-    tryLive();
-    setInterval(tryLive, 60000);
+    if (window.Chart && window.ChartDataLabels) { Chart.register(window.ChartDataLabels); }
+
+    const loginEl = document.getElementById('ss-login');
+    const loginUser = document.getElementById('ss-login-user');
+    const loginPass = document.getElementById('ss-login-pass');
+    const loginError = document.getElementById('ss-login-error');
+    const appShell = document.querySelector('.app-shell');
+    const sidebarUser = document.getElementById('ss-sidebar-user');
+    const sidebarAvatar = document.getElementById('ss-sidebar-avatar');
+    const sidebarName = document.getElementById('ss-sidebar-name');
+    const sidebarId = document.getElementById('ss-sidebar-id');
+    const sidebarRole = document.getElementById('ss-sidebar-role');
+    const logout = document.getElementById('ss-sidebar-logout');
+    const loginTab = document.getElementById('ss-tab-login');
+    const signupTab = document.getElementById('ss-tab-signup');
+    const loginForm = document.getElementById('ss-login-form');
+    const signupForm = document.getElementById('ss-signup-form');
+    const signupError = document.getElementById('ss-signup-error');
+
+    function showAuthTab(mode){
+      const isLogin = mode === 'login';
+      loginTab.classList.toggle('active', isLogin);
+      signupTab.classList.toggle('active', !isLogin);
+      loginForm.classList.toggle('hidden', !isLogin);
+      signupForm.classList.toggle('hidden', isLogin);
+      loginError.textContent = '';
+      signupError.textContent = '';
+      (isLogin ? loginUser : document.getElementById('ss-signup-name')).focus();
+    }
+
+    function updateUserUI(){
+      if(!currentUser) return;
+      const initials = (currentUser.name || currentUser.id || 'U').trim().split(/\s+/).slice(0,2).map(x => x[0]).join('').toUpperCase();
+      sidebarAvatar.textContent = initials || 'U';
+      sidebarName.textContent = currentUser.name || currentUser.id;
+      sidebarId.textContent = '@' + (currentUser.id || 'user');
+      sidebarRole.textContent = currentUser.role || 'user';
+      sidebarUser.style.display = 'block';
+      const settingsNav = document.querySelector('#ss-nav [data-tab="settings"]');
+      if(settingsNav) settingsNav.style.display = currentUser.role === 'admin' ? 'flex' : 'none';
+      const usersNav = document.querySelector('#ss-nav [data-tab="users"]');
+      if(usersNav) usersNav.style.display = 'flex';
+    }
+
+    async function loginUserAccount(){
+      const id = (loginUser.value || '').trim().toLowerCase();
+      const pass = loginPass.value || '';
+      USER_ACCOUNTS = loadUserAccounts();
+      const account = USER_ACCOUNTS[id];
+      let valid = false;
+      if(account){
+        if(account.passwordHash){
+          valid = (await hashPassword(pass)) === account.passwordHash;
+        } else {
+          valid = account.password === pass;
+        }
+      }
+      if(!valid){
+        loginError.textContent = 'Invalid user ID or password.';
+        return;
+      }
+
+      currentUser = Object.assign({id}, account);
+      loginError.textContent = '';
+      loginPass.value = '';
+      loginEl.style.display = 'none';
+      appShell.style.display = 'flex';
+      updateUserUI();
+
+      // Reset dashboard state for the newly signed-in user.
+      rangeFilter = 'all';
+      customStart = null;
+      customEnd = null;
+      currentTab = 'dashboard';
+      document.querySelectorAll('#ss-nav .nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === 'dashboard'));
+
+      if(account.sourceUrl){
+        let url = account.sourceUrl;
+        const gMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        if(gMatch) url = `https://docs.google.com/spreadsheets/d/${gMatch[1]}/export?format=csv`;
+        ACTIVE_CSV_URL = url;
+        dataSourceMode = gMatch ? 'sheet' : 'url';
+        dataSourceLabel = account.sourceUrl;
+        setSnapshot();
+        tryLive();
+      } else {
+        ACTIVE_CSV_URL = '';
+        dataSourceMode = 'csv-file';
+        dataSourceLabel = "Built-in snapshot (configure this user's sourceUrl)";
+        setSnapshot();
+        renderAll();
+      }
+    }
+
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      signupError.textContent = '';
+      const name = document.getElementById('ss-signup-name').value.trim();
+      const id = document.getElementById('ss-signup-user').value.trim().toLowerCase();
+      const pass = document.getElementById('ss-signup-pass').value;
+      const pass2 = document.getElementById('ss-signup-pass2').value;
+      const sourceUrl = document.getElementById('ss-signup-source').value.trim();
+
+      USER_ACCOUNTS = loadUserAccounts();
+      if(!/^[a-z0-9._-]{3,30}$/.test(id)){
+        signupError.textContent = 'User ID must be 3–30 characters: letters, numbers, dot, underscore or hyphen.';
+        return;
+      }
+      if(USER_ACCOUNTS[id]){
+        signupError.textContent = 'That User ID already exists. Please choose another.';
+        return;
+      }
+      if(pass.length < 6){
+        signupError.textContent = 'Password must be at least 6 characters.';
+        return;
+      }
+      if(pass !== pass2){
+        signupError.textContent = 'Passwords do not match.';
+        return;
+      }
+
+      const account = {
+        passwordHash: await hashPassword(pass),
+        name: name || id,
+        role: 'user',
+        sourceUrl: sourceUrl,
+        allowedCategories: null
+      };
+      saveUserAccount(id, account);
+      USER_ACCOUNTS = loadUserAccounts();
+
+      alert('Account created successfully. You can now log in with your new User ID and Password.');
+      signupForm.reset();
+      showAuthTab('login');
+      loginUser.value = id;
+      loginPass.focus();
+    });
+
+    loginTab.addEventListener('click', () => showAuthTab('login'));
+    signupTab.addEventListener('click', () => showAuthTab('signup'));
+    loginForm.addEventListener('submit', (e) => { e.preventDefault(); loginUserAccount(); });
+    logout.addEventListener('click', () => {
+      currentUser = null;
+      sidebarUser.style.display = 'none';
+      ALL_DATA = [];
+      if(areaChart) areaChart.destroy();
+      if(pieChart) pieChart.destroy();
+      if(hbarChart) hbarChart.destroy();
+      if(flowChart) flowChart.destroy();
+      if(stackAreaChart) stackAreaChart.destroy();
+      body.innerHTML = '<div class="err">Please sign in to view the dashboard.</div>';
+      appShell.style.display = 'none';
+      loginEl.style.display = 'flex';
+      loginUser.value = '';
+      loginPass.value = '';
+      loginError.textContent = '';
+      loginUser.focus();
+    });
+
+    // Keep the dashboard hidden until a valid account signs in.
+    appShell.style.display = 'none';
+    loginEl.style.display = 'flex';
+    loginUser.focus();
+    setInterval(() => { if(currentUser) tryLive(); }, 60000);
   }).catch(err => {
-    body.innerHTML = '<div class="err">Couldn\'t load charting libraries (' + err.message + '). Try refreshing the page.</div>';
+    document.getElementById('ss-login-error').textContent = 'Couldn\'t load dashboard libraries (' + err.message + '). Refresh the page.';
   });
 })();
 </script>
