@@ -254,6 +254,9 @@
   .password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;padding:7px;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center;border-radius:6px;}
   .password-toggle:hover{background:#f1f5f9;color:#0f172a;}
   .password-toggle svg{width:20px;height:20px;}
+  .signup-source-choice{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px;}
+  .signup-source-choice .range-btn{font-size:12px;}
+  #ss-signup-excel{padding:10px;background:#fff;}
 
   @media(max-width:640px){#ss-login .login-card{padding:24px;}}
 </style>
@@ -303,13 +306,23 @@
         </button>
       </div>
       <label for="ss-signup-source">Your Data Source <span style="font-weight:500;color:#94a3b8;">(optional)</span></label>
-      <input id="ss-signup-source" type="text" placeholder="Google Sheet or CSV URL">
-      <div class="signup-help">If you enter a Google Sheet/CSV URL, this account will use that dataset after login. The Google Sheet must be published/exportable as CSV.</div>
+      <div class="signup-source-choice" id="ss-signup-source-choice">
+        <button class="range-btn active" data-signup-source="url" type="button">Google Sheet / CSV URL</button>
+        <button class="range-btn" data-signup-source="excel" type="button">Upload Excel File</button>
+      </div>
+      <div id="ss-signup-url-panel">
+        <input id="ss-signup-source" type="text" placeholder="Google Sheet or CSV URL">
+        <div class="signup-help">The Google Sheet must be publicly viewable/exportable as CSV.</div>
+      </div>
+      <div id="ss-signup-excel-panel" style="display:none;">
+        <input id="ss-signup-excel" type="file" accept=".xlsx,.xls">
+        <div class="signup-help">Upload an Excel file (.xlsx or .xls). The first worksheet will be used for this user's dashboard. The file is stored in this browser for this account.</div>
+      </div>
       <button class="login-btn" type="submit">Create account</button>
       <div class="login-error" id="ss-signup-error"></div>
     </form>
 
-    <div class="login-note">Create your account once, then use the same User ID and Password next time. Accounts are stored in this browser. For real multi-device/company security, use server-side authentication and a database.</div>
+    <div class="login-note">Create your account once, then use the same User ID and Password next time. You can assign a Google Sheet/CSV URL or upload an Excel file. Uploaded Excel files are stored in this browser for that account. For real multi-device/company security, use server-side authentication and a database.</div>
   </div>
 </div>
 
@@ -456,6 +469,52 @@
     saved[id] = account;
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(saved));
   }
+
+  // Uploaded Excel files are stored in IndexedDB so they remain available
+  // the next time the same user logs in, without trying to put the file
+  // itself into localStorage.
+  const USER_FILE_DB = 'sohlene_dashboard_files_v1';
+  const USER_FILE_STORE = 'excel_files';
+  function openUserFileDB(){
+    return new Promise((resolve, reject) => {
+      if(!window.indexedDB){ reject(new Error('IndexedDB is not available in this browser.')); return; }
+      const req = indexedDB.open(USER_FILE_DB, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains(USER_FILE_STORE)) db.createObjectStore(USER_FILE_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error('Could not open browser file storage.'));
+    });
+  }
+  async function saveUserDataFile(userId, file, kind){
+    const db = await openUserFileDB();
+    const buffer = await file.arrayBuffer();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(USER_FILE_STORE, 'readwrite');
+      tx.objectStore(USER_FILE_STORE).put({
+        name:file.name,
+        type:file.type || (kind === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv'),
+        kind,
+        buffer
+      }, userId);
+      tx.oncomplete = () => { db.close(); resolve({name:file.name, kind}); };
+      tx.onerror = () => { db.close(); reject(tx.error || new Error('Could not save the data file.')); };
+      tx.onabort = () => { db.close(); reject(tx.error || new Error('Could not save the data file.')); };
+    });
+  }
+  async function loadUserDataFile(userId){
+    const db = await openUserFileDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(USER_FILE_STORE, 'readonly');
+      const req = tx.objectStore(USER_FILE_STORE).get(userId);
+      req.onsuccess = () => { db.close(); resolve(req.result || null); };
+      req.onerror = () => { db.close(); reject(req.error || new Error('Could not read the saved data file.')); };
+    });
+  }
+  async function saveUserExcelFile(userId, file){ return saveUserDataFile(userId, file, 'excel'); }
+  async function saveUserCsvFile(userId, file){ return saveUserDataFile(userId, file, 'csv'); }
+  async function loadUserExcelFile(userId){ return loadUserDataFile(userId); }
 
   async function hashPassword(value){
     if(window.crypto && crypto.subtle){
@@ -689,7 +748,11 @@
     const generic = parseGeneric(text);
     const movement = classifyMovementCols(generic.valueCols);
     const usedByMovement = new Set(Object.values(movement).filter(Boolean));
-    const categories = generic.valueCols.filter(c=>!usedByMovement.has(c));
+    // The source may contain its own pre-calculated Total column. Do not treat
+    // that column as a stock category; the dashboard calculates one Total
+    // (filtered) column from the selected categories instead.
+    const isSourceTotal = c => /^total(?:\s*\(.*\))?$/i.test(String(c).trim());
+    const categories = generic.valueCols.filter(c=>!usedByMovement.has(c) && !isSourceTotal(c));
     if(categories.length===0) throw new Error('found columns, but none usable as stock categories');
     const catColor = {};
     categories.forEach((c,i)=>catColor[c]=PALETTE[i % PALETTE.length]);
@@ -699,13 +762,86 @@
   function applySchema(schema, label){
     ALL_DATA = schema.rows;
     const allowed = currentUser && Array.isArray(currentUser.allowedCategories) ? currentUser.allowedCategories : null;
-    CATEGORIES = allowed ? schema.categories.filter(c => allowed.includes(c)) : schema.categories;
+    // Never show the source's pre-calculated Total as a category. The table
+    // and charts use the single dashboard-calculated Total (filtered) value.
+    const sourceTotal = c => /^total(?:\s*\(.*\))?$/i.test(String(c).trim());
+    CATEGORIES = (allowed ? schema.categories.filter(c => allowed.includes(c)) : schema.categories)
+      .filter(c => !sourceTotal(c));
     CAT_COLOR = schema.catColor;
     MOVEMENT_COLS = schema.movementCols;
     BAR_EXCLUDE = schema.barExclude;
     schemaMode = schema.mode;
     activeCats = new Set(CATEGORIES);
     boundsSet = false;
+  }
+
+  // ---- Source loading helpers ----
+  // Google Sheets can reject normal fetch() requests when this dashboard is
+  // opened as a local/static HTML file. Use the Sheets Visualization JSONP
+  // endpoint as a browser-safe fallback so a source change updates immediately
+  // without requiring logout/login.
+  function getGoogleSheetInfo(rawUrl){
+    const m = String(rawUrl || '').match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if(!m) return null;
+    const gidMatch = String(rawUrl || '').match(/[?#&]gid=([0-9]+)/);
+    return { id:m[1], gid:gidMatch ? gidMatch[1] : '0' };
+  }
+
+  function googleSheetJsonpText(rawUrl){
+    const info = getGoogleSheetInfo(rawUrl);
+    if(!info) return Promise.reject(new Error('Not a Google Sheets URL.'));
+    return new Promise((resolve, reject) => {
+      const callbackName = '__sohleneSheet_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      const script = document.createElement('script');
+      const cleanup = () => {
+        try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
+        if(script.parentNode) script.parentNode.removeChild(script);
+      };
+      const timer = setTimeout(() => { cleanup(); reject(new Error('Google Sheet request timed out.')); }, 15000);
+      window[callbackName] = (payload) => {
+        clearTimeout(timer);
+        try{
+          if(!payload || payload.status !== 'ok' || !payload.table) throw new Error('Google Sheet is not publicly viewable.');
+          const cols = (payload.table.cols || []).map((c,i) => (c && (c.label || c.id)) || ('Column ' + (i+1)));
+          const esc = v => { const x = v == null ? '' : String(v); return /[\",\n]/.test(x) ? '"' + x.replace(/"/g,'""') + '"' : x; };
+          const lines = [cols.map(esc).join(',')];
+          (payload.table.rows || []).forEach(row => {
+            const cells = row.c || [];
+            lines.push(cols.map((_,i) => {
+              const cell = cells[i];
+              if(!cell) return '';
+              // Prefer formatted display value; fall back to raw numeric/string value.
+              return esc(cell.f != null ? cell.f : cell.v);
+            }).join(','));
+          });
+          cleanup();
+          resolve(lines.join('\n'));
+        }catch(err){ cleanup(); reject(err); }
+      };
+      const params = `tqx=out:json;responseHandler:${callbackName}&gid=${encodeURIComponent(info.gid)}`;
+      script.src = `https://docs.google.com/spreadsheets/d/${info.id}/gviz/tq?${params}`;
+      script.async = true;
+      script.onerror = () => { clearTimeout(timer); cleanup(); reject(new Error('Google Sheet could not be reached.')); };
+      document.head.appendChild(script);
+    });
+  }
+
+  async function loadSourceText(rawUrl){
+    rawUrl = String(rawUrl || '').trim();
+    const info = getGoogleSheetInfo(rawUrl);
+    let url = rawUrl;
+    if(info) url = `https://docs.google.com/spreadsheets/d/${info.id}/export?format=csv&gid=${encodeURIComponent(info.gid)}`;
+    try{
+      const res = await fetch(url, {cache:'no-store'});
+      if(!res.ok) throw new Error('server returned ' + res.status);
+      return { text: await res.text(), url, isGoogleSheet: !!info };
+    }catch(fetchErr){
+      if(info){
+        const text = await googleSheetJsonpText(rawUrl);
+        return { text, url, isGoogleSheet:true, usedJsonp:true };
+      }
+      throw fetchErr;
+    }
   }
 
   // ---- App state ----
@@ -956,7 +1092,9 @@
       return a[0].localeCompare(b[0]);
     });
     const initials = (currentUser.name || currentUser.id || 'U').trim().split(/\s+/).slice(0,2).map(x => x[0]).join('').toUpperCase();
-    const sourceLabel = currentUser.sourceUrl ? currentUser.sourceUrl : 'Built-in snapshot / not assigned';
+    const sourceLabel = currentUser.sourceType === 'excel-file'
+      ? ('Excel file: ' + (currentUser.sourceFileName || 'Saved Excel dataset'))
+      : (currentUser.sourceUrl ? currentUser.sourceUrl : 'Built-in snapshot / not assigned');
 
     let rows = '';
     if(currentUser.role === 'admin'){
@@ -984,6 +1122,29 @@
         <div class="settings-row"><span class="k">Category access</span><span class="v">${currentUser.allowedCategories ? currentUser.allowedCategories.join(', ') : 'All categories'}</span></div>
       </div>
 
+      <div class="section-label" style="margin-top:26px;">Change data source</div>
+      <div class="users-panel" style="max-width:700px;">
+        <div class="source-type-row" id="ss-user-source-types">
+          <button class="range-btn active" data-user-src="url" type="button">Google Sheet / CSV URL</button>
+          <button class="range-btn" data-user-src="csv-file" type="button">Upload CSV</button>
+          <button class="range-btn" data-user-src="excel-file" type="button">Upload Excel</button>
+        </div>
+        <div id="ss-user-source-url-panel" class="source-panel">
+          <input type="text" id="ss-user-source-url" placeholder="Paste Google Sheet link or CSV URL" value="${currentUser.sourceType === 'sheet' || currentUser.sourceType === 'url' ? (currentUser.sourceUrl || '') : ''}">
+          <button class="refresh-btn" id="ss-user-source-connect" type="button" style="margin-top:10px;">Save & Load Source</button>
+        </div>
+        <div id="ss-user-source-csv-panel" class="source-panel" style="display:none;">
+          <input type="file" id="ss-user-source-csv" accept=".csv,text/csv">
+          <button class="refresh-btn" id="ss-user-source-csv-btn" type="button" style="margin-top:10px;">Save & Load CSV</button>
+        </div>
+        <div id="ss-user-source-excel-panel" class="source-panel" style="display:none;">
+          <input type="file" id="ss-user-source-excel" accept=".xlsx,.xls">
+          <button class="refresh-btn" id="ss-user-source-excel-btn" type="button" style="margin-top:10px;">Save & Load Excel</button>
+        </div>
+        <div id="ss-user-source-status" class="source-status"></div>
+        <p class="source-note">Your new source is saved to this user account in this browser. Google Sheets must be publicly viewable. Uploaded CSV/Excel files stay associated with this User ID for the next login on this browser.</p>
+      </div>
+
       ${currentUser.role === 'admin' ? `
         <div class="section-label" style="margin-top:26px;">All users</div>
         <div class="users-panel">
@@ -998,6 +1159,111 @@
         <div class="section-label" style="margin-top:26px;">Access</div>
         <div class="users-panel"><div style="font-size:12px;color:#64748B;line-height:1.6;">You can view your own account and assigned dataset. User administration is available only to an administrator.</div></div>`}
     `;
+
+    // User-specific data source controls
+    const userTypeButtons = document.querySelectorAll('#ss-user-source-types .range-btn');
+    const userPanels = {
+      url: document.getElementById('ss-user-source-url-panel'),
+      'csv-file': document.getElementById('ss-user-source-csv-panel'),
+      'excel-file': document.getElementById('ss-user-source-excel-panel')
+    };
+    const userStatus = document.getElementById('ss-user-source-status');
+    const setUserSourceStatus = (msg, isError) => {
+      if(userStatus){ userStatus.textContent = msg; userStatus.style.color = isError ? '#DC2626' : '#059669'; }
+    };
+    const persistUserSource = (sourceType, sourceUrl, sourceFileName, sourceFileKey) => {
+      USER_ACCOUNTS = loadUserAccounts();
+      const existing = USER_ACCOUNTS[currentUser.id] || {};
+      const account = Object.assign({}, existing, {
+        name: currentUser.name || existing.name || currentUser.id,
+        role: currentUser.role || existing.role || 'user',
+        allowedCategories: currentUser.allowedCategories ?? existing.allowedCategories ?? null,
+        sourceType, sourceUrl: sourceUrl || '', sourceFileKey: sourceFileKey || '', sourceFileName: sourceFileName || ''
+      });
+      saveUserAccount(currentUser.id, account);
+      USER_ACCOUNTS = loadUserAccounts();
+      currentUser = Object.assign({id: currentUser.id}, account);
+      updateUserUI();
+    };
+    userTypeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        userTypeButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        Object.entries(userPanels).forEach(([k, el]) => { if(el) el.style.display = (k === btn.dataset.userSrc) ? 'block' : 'none'; });
+        setUserSourceStatus('', false);
+      });
+    });
+
+    const userUrlBtn = document.getElementById('ss-user-source-connect');
+    if(userUrlBtn) userUrlBtn.addEventListener('click', async () => {
+      const rawUrl = document.getElementById('ss-user-source-url').value.trim();
+      if(!rawUrl){ setUserSourceStatus('Paste a Google Sheet or CSV URL first.', true); return; }
+      setUserSourceStatus('Connecting…', false);
+      try{
+        const loaded = await loadSourceText(rawUrl);
+        const schema = buildSchemaFromRows(loaded.text);
+        // Apply the new dataset BEFORE saving the account, so the currently
+        // logged-in dashboard changes immediately.
+        applySchema(schema, rawUrl);
+        ACTIVE_CSV_URL = loaded.url;
+        dataSourceMode = loaded.isGoogleSheet ? 'sheet' : 'url';
+        dataSourceLabel = rawUrl;
+        persistUserSource(dataSourceMode, rawUrl, '', '');
+        refreshTimeEl.textContent = 'live, refreshed ' + new Date().toLocaleTimeString();
+        syncNoteEl.textContent = 'Using this user’s saved Google Sheet / CSV URL.';
+        setUserSourceStatus('Source saved and loaded successfully' + (loaded.usedJsonp ? ' (Google Sheets browser-safe mode).' : '.') + ' ' + schemaStatusMessage(schema), false);
+        renderAll();
+      }catch(e){ setUserSourceStatus('Could not load that source (' + e.message + '). Make sure the Google Sheet is publicly viewable.', true); }
+    });
+
+    const userCsvBtn = document.getElementById('ss-user-source-csv-btn');
+    if(userCsvBtn) userCsvBtn.addEventListener('click', async () => {
+      const file = document.getElementById('ss-user-source-csv').files[0];
+      if(!file){ setUserSourceStatus('Choose a CSV file first.', true); return; }
+      setUserSourceStatus('Reading ' + file.name + '…', false);
+      try{
+        const text = await file.text();
+        const schema = buildSchemaFromRows(text);
+        await saveUserCsvFile(currentUser.id, file);
+        applySchema(schema, file.name);
+        ACTIVE_CSV_URL = '';
+        dataSourceMode = 'csv-file';
+        dataSourceLabel = file.name;
+        persistUserSource('csv-file', '', file.name, currentUser.id);
+        refreshTimeEl.textContent = 'saved CSV, loaded ' + new Date().toLocaleTimeString();
+        syncNoteEl.textContent = 'Using this user’s saved CSV file.';
+        setUserSourceStatus('CSV saved to this account and loaded successfully. ' + schemaStatusMessage(schema), false);
+        renderAll();
+      }catch(e){ setUserSourceStatus('Could not save/read the CSV (' + e.message + ').', true); }
+    });
+
+    const userExcelBtn = document.getElementById('ss-user-source-excel-btn');
+    if(userExcelBtn) userExcelBtn.addEventListener('click', async () => {
+      const file = document.getElementById('ss-user-source-excel').files[0];
+      if(!file){ setUserSourceStatus('Choose an Excel file first.', true); return; }
+      setUserSourceStatus('Reading ' + file.name + '…', false);
+      try{
+        if(!xlsxLoaded){
+          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+          xlsxLoaded = true;
+        }
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, {type:'array'});
+        const sheetName = wb.SheetNames[0];
+        const csvText = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]);
+        const schema = buildSchemaFromRows(csvText);
+        await saveUserExcelFile(currentUser.id, file);
+        applySchema(schema, file.name);
+        ACTIVE_CSV_URL = '';
+        dataSourceMode = 'excel-file';
+        dataSourceLabel = file.name;
+        persistUserSource('excel-file', '', file.name, currentUser.id);
+        refreshTimeEl.textContent = 'saved Excel, loaded ' + new Date().toLocaleTimeString();
+        syncNoteEl.textContent = 'Using this user’s saved Excel file.';
+        setUserSourceStatus('Excel saved to this account and loaded successfully. Sheet: ' + sheetName + '. ' + schemaStatusMessage(schema), false);
+        renderAll();
+      }catch(e){ setUserSourceStatus('Could not save/read the Excel file (' + e.message + ').', true); }
+    });
   }
 
   function renderSettings(){
@@ -1189,15 +1455,14 @@
   async function tryLive(){
     if(dataSourceMode !== 'sheet' && dataSourceMode !== 'url') return; // file-based sources don't poll
     try{
-      const res = await fetch(ACTIVE_CSV_URL, {cache:'no-store'});
-      if(!res.ok) throw new Error('fetch failed');
-      const text = await res.text();
-      const schema = buildSchemaFromRows(text);
+      const loaded = await loadSourceText(ACTIVE_CSV_URL);
+      const schema = buildSchemaFromRows(loaded.text);
       const schemaChanged = JSON.stringify(schema.categories) !== JSON.stringify(CATEGORIES)
                           || JSON.stringify(schema.movementCols) !== JSON.stringify(MOVEMENT_COLS);
-      if(schemaChanged){ applySchema(schema); } else { ALL_DATA = schema.rows; }
+      if(schemaChanged){ applySchema(schema); } else { ALL_DATA = schema.rows; boundsSet = false; }
+      ACTIVE_CSV_URL = loaded.url;
       refreshTimeEl.textContent = 'live, refreshed ' + new Date().toLocaleTimeString();
-      syncNoteEl.textContent = '';
+      syncNoteEl.textContent = loaded.usedJsonp ? 'Google Sheet loaded using browser-safe mode.' : '';
       renderAll();
     }catch(e){ /* keep showing current data */ }
   }
@@ -1496,7 +1761,41 @@
       currentTab = 'dashboard';
       document.querySelectorAll('#ss-nav .nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === 'dashboard'));
 
-      if(account.sourceUrl){
+      if((account.sourceType === 'excel-file' || account.sourceType === 'csv-file') && account.sourceFileKey){
+        try{
+          const savedFile = await loadUserDataFile(account.sourceFileKey);
+          if(!savedFile || !savedFile.buffer) throw new Error('Saved data file was not found in this browser.');
+          let schema;
+          if(account.sourceType === 'excel-file'){
+            if(!xlsxLoaded){
+              await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+              xlsxLoaded = true;
+            }
+            const wb = XLSX.read(savedFile.buffer, {type:'array'});
+            const sheetName = wb.SheetNames[0];
+            const csvText = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]);
+            schema = buildSchemaFromRows(csvText);
+          } else {
+            const csvText = new TextDecoder().decode(savedFile.buffer);
+            schema = buildSchemaFromRows(csvText);
+          }
+          const label = savedFile.name || account.sourceFileName || (account.sourceType === 'excel-file' ? 'Excel file' : 'CSV file');
+          applySchema(schema, label);
+          ACTIVE_CSV_URL = '';
+          dataSourceMode = account.sourceType;
+          dataSourceLabel = label;
+          refreshTimeEl.textContent = 'saved file, loaded ' + new Date().toLocaleTimeString();
+          syncNoteEl.textContent = "Using this user's saved file. Change it anytime from Users → Change data source.";
+          renderAll();
+        }catch(err){
+          ACTIVE_CSV_URL = '';
+          dataSourceMode = account.sourceType;
+          dataSourceLabel = account.sourceFileName || 'Saved data file';
+          setSnapshot();
+          renderAll();
+          alert('This account has a saved dataset, but it could not be loaded: ' + err.message);
+        }
+      } else if(account.sourceUrl){
         let url = account.sourceUrl;
         const gMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
         if(gMatch) url = `https://docs.google.com/spreadsheets/d/${gMatch[1]}/export?format=csv`;
@@ -1508,7 +1807,7 @@
       } else {
         ACTIVE_CSV_URL = '';
         dataSourceMode = 'csv-file';
-        dataSourceLabel = "Built-in snapshot (configure this user's sourceUrl)";
+        dataSourceLabel = "Built-in snapshot (configure this user's source)";
         setSnapshot();
         renderAll();
       }
@@ -1522,6 +1821,8 @@
       const pass = document.getElementById('ss-signup-pass').value;
       const pass2 = document.getElementById('ss-signup-pass2').value;
       const sourceUrl = document.getElementById('ss-signup-source').value.trim();
+      const excelFile = document.getElementById('ss-signup-excel').files[0] || null;
+      const sourceMode = document.querySelector('#ss-signup-source-choice .range-btn.active')?.dataset.signupSource || 'url';
 
       USER_ACCOUNTS = loadUserAccounts();
       if(!/^[a-z0-9._-]{3,30}$/.test(id)){
@@ -1541,11 +1842,33 @@
         return;
       }
 
+      if(sourceMode === 'excel' && !excelFile){
+        signupError.textContent = 'Please choose an Excel file, or switch back to Google Sheet / CSV URL.';
+        return;
+      }
+      if(sourceMode === 'url' && !sourceUrl && !excelFile){
+        // A source is optional; blank means the built-in snapshot.
+      }
+
+      let sourceFileName = '';
+      if(sourceMode === 'excel' && excelFile){
+        try{
+          await saveUserExcelFile(id, excelFile);
+          sourceFileName = excelFile.name;
+        }catch(err){
+          signupError.textContent = 'Could not save the Excel file in this browser: ' + err.message;
+          return;
+        }
+      }
+
       const account = {
         passwordHash: await hashPassword(pass),
         name: name || id,
         role: 'user',
-        sourceUrl: sourceUrl,
+        sourceType: sourceMode === 'excel' ? 'excel-file' : (sourceUrl ? 'url' : 'none'),
+        sourceUrl: sourceMode === 'excel' ? '' : sourceUrl,
+        sourceFileKey: sourceMode === 'excel' ? id : '',
+        sourceFileName: sourceFileName,
         allowedCategories: null
       };
       saveUserAccount(id, account);
@@ -1556,6 +1879,17 @@
       showAuthTab('login');
       loginUser.value = id;
       loginPass.focus();
+    });
+
+    document.querySelectorAll('#ss-signup-source-choice .range-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#ss-signup-source-choice .range-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const isExcel = btn.dataset.signupSource === 'excel';
+        document.getElementById('ss-signup-url-panel').style.display = isExcel ? 'none' : 'block';
+        document.getElementById('ss-signup-excel-panel').style.display = isExcel ? 'block' : 'none';
+        signupError.textContent = '';
+      });
     });
 
     loginTab.addEventListener('click', () => showAuthTab('login'));
