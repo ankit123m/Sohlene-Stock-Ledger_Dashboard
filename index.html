@@ -41,6 +41,33 @@
   .topbar .crumb{ font-size:12px; color:#6B7280; margin-bottom:3px; }
   .topbar h1{ font-size:23px; font-weight:800; color:var(--ink); margin:0; }
   .topbar .right{ display:flex; align-items:center; gap:14px; text-align:right; }
+  .hamburger-btn{
+    display:none; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px;
+    border:1px solid var(--line); background:#FFFFFF; color:var(--ink); cursor:pointer; flex-shrink:0;
+  }
+  .hamburger-btn svg{ width:18px; height:18px; }
+  .sidebar-backdrop{ display:none; position:fixed; inset:0; background:rgba(15,15,20,0.4); z-index:40; }
+
+  /* ---- Mobile layout (<= 880px): sidebar becomes an off-canvas drawer ---- */
+  @media (max-width: 880px){
+    .app-shell{ display:block; }
+    .sidebar{
+      position:fixed; top:0; left:0; height:100vh; z-index:50; width:250px;
+      transform:translateX(-100%); transition:transform .22s ease; box-shadow:0 0 0 rgba(0,0,0,0);
+    }
+    .sidebar.open{ transform:translateX(0); box-shadow:2px 0 24px rgba(0,0,0,0.18); }
+    .sidebar-backdrop.open{ display:block; }
+    .hamburger-btn{ display:inline-flex; }
+    .main-col{ padding:16px 16px 32px; max-width:100%; }
+    .topbar{ align-items:center; }
+    .topbar .left-group{ display:flex; align-items:center; gap:10px; }
+    .topbar h1{ font-size:19px; }
+    .topbar .right{ width:100%; justify-content:space-between; order:3; margin-top:6px; }
+  }
+  @media (max-width: 480px){
+    .main-col{ padding:12px 12px 28px; }
+    .topbar .right{ flex-direction:column; align-items:flex-end; gap:8px; }
+  }
   #sohlene-dash{ color:var(--ink); font-family:'Inter',sans-serif; }
   #sohlene-dash .as-of{ font-size:12px; color:#6B7280; text-align:right; line-height:1.5; }
   #sohlene-dash .as-of b{ color:var(--ink); font-weight:600; }
@@ -102,6 +129,22 @@
   #sohlene-dash .section-label{ font-family:'Inter',sans-serif; font-weight:700; font-size:15.5px; margin:0 0 14px; color:var(--ink); }
   #sohlene-dash .grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:20px; }
   @media (max-width:760px){ #sohlene-dash .grid-2{ grid-template-columns:1fr; } }
+
+  @media (max-width: 640px){
+    #sohlene-dash .kpi-row{ grid-template-columns:repeat(2, 1fr); gap:10px; }
+    #sohlene-dash .kpi{ padding:14px 14px; }
+    #sohlene-dash .kpi .num{ font-size:21px; }
+    #sohlene-dash .filter-bar{ padding:12px; gap:12px; }
+    #sohlene-dash .filter-group{ width:100%; }
+    #sohlene-dash .chart-box{ height:210px; padding:12px; }
+    #sohlene-dash .chart-box.tall{ height:250px; }
+    #sohlene-dash .settings-panel{ max-width:100%; padding:16px; }
+    #sohlene-dash .settings-row{ flex-direction:column; align-items:flex-start; gap:3px; }
+    #sohlene-dash .settings-row .v{ text-align:left; }
+  }
+  @media (max-width: 380px){
+    #sohlene-dash .kpi-row{ grid-template-columns:1fr; }
+  }
 
   #sohlene-dash .table-scroll{ overflow-x:auto; }
   #sohlene-dash table{ width:100%; border-collapse:collapse; font-size:13px; }
@@ -176,12 +219,18 @@
       </div>
     </nav>
   </aside>
+  <div class="sidebar-backdrop" id="ss-backdrop"></div>
 
   <div class="main-col">
     <div class="topbar">
-      <div>
-        <div class="crumb">Sohlene / Stock Ledger</div>
-        <h1 id="ss-pagetitle">Dashboard</h1>
+      <div class="left-group">
+        <button class="hamburger-btn" id="ss-hamburger" type="button" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div>
+          <div class="crumb">Sohlene / Stock Ledger</div>
+          <h1 id="ss-pagetitle">Dashboard</h1>
+        </div>
       </div>
       <div class="right">
         <div class="as-of">
@@ -229,7 +278,7 @@
   let dataSourceLabel = 'Google Sheet (default)';
   let xlsxLoaded = false;
   const HEADERS = ["Date","Rings","Earrings","Bracelet","Bangle","Necklace","Pendant","RFS","Stone","Approval","Ring Collet","Detachable rings","Added to stock","Sent for repair","Sale","Total"];
-  const CATEGORIES = ["Rings","Earrings","Bracelet","Bangle","Necklace","Pendant","RFS","Stone","Ring Collet","Detachable rings"];
+  let CATEGORIES = ["Rings","Earrings","Bracelet","Bangle","Necklace","Pendant","RFS","Stone","Ring Collet","Detachable rings"];
   const PALETTE = ['#6366F1','#0EA5E9','#059669','#F59E0B','#EC4899','#64748B','#8B5CF6','#14B8A6','#F97316','#2563EB'];
 
   // Small inline icons for the KPI cards — no external icon library needed.
@@ -243,7 +292,17 @@
     chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>',
     calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>'
   };
-  const CAT_COLOR = {}; CATEGORIES.forEach((c,i)=>CAT_COLOR[c]=PALETTE[i%PALETTE.length]);
+  let CAT_COLOR = {}; CATEGORIES.forEach((c,i)=>CAT_COLOR[c]=PALETTE[i%PALETTE.length]);
+  let MOVEMENT_COLS = { added: 'Added to stock', sale: 'Sale', repair: 'Sent for repair' };
+  let BAR_EXCLUDE = ['RFS','Stone','Ring Collet','Detachable rings'];
+  let schemaMode = 'template'; // 'template' | 'dynamic' — whether the current source matches the known layout or was auto-detected
+
+  // Snapshot of the original Sohlene template, so "Reset to default sheet" and
+  // any future template-matching source can restore this exact schema.
+  const ORIGINAL_CATEGORIES = CATEGORIES.slice();
+  const ORIGINAL_CAT_COLOR = Object.assign({}, CAT_COLOR);
+  const ORIGINAL_MOVEMENT_COLS = Object.assign({}, MOVEMENT_COLS);
+  const ORIGINAL_BAR_EXCLUDE = BAR_EXCLUDE.slice();
 
   // Snapshot captured from the live sheet — always shown, replaced automatically if a live fetch succeeds.
   const SNAPSHOT_ROWS = [
@@ -343,8 +402,119 @@
     return out;
   }
 
+  // ---- Generic parser: for spreadsheets that don't match the known template ----
+  // Auto-detects which column is the date and which columns are numeric "value"
+  // columns, so a completely different sheet layout can still drive the dashboard.
+  function parseFlexibleDate(raw){
+    if(raw===undefined || raw===null || raw==='') return null;
+    const s = String(raw).trim();
+    let m;
+    if((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return new Date(+m[1], +m[2]-1, +m[3]);
+    if((m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/))) return new Date(+m[3], +m[2]-1, +m[1]);
+    if((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))) return new Date(+m[3], +m[2]-1, +m[1]); // assumes DD/MM/YYYY
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function toCanonicalDate(d){
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    return `${dd}.${mm}.${d.getFullYear()}`;
+  }
+
+  function parseGeneric(text){
+    const rows = Papa.parse(text.trim(), {skipEmptyLines:true}).data;
+    if(!rows.length) throw new Error('the file looks empty');
+    const headers = rows[0].map(h=>(h||'').trim());
+    const body = rows.slice(1).filter(r=>r.some(c=>(c||'').trim()!==''));
+    if(!body.length) throw new Error('no data rows found');
+
+    // 1. find the date column — prefer a header that looks date-ish, else whichever
+    //    column has the most parseable dates in a sample of rows
+    let dateColIdx = headers.findIndex(h=>/date|day|month/i.test(h));
+    if(dateColIdx === -1){
+      let bestIdx=-1, bestScore=0;
+      for(let c=0;c<headers.length;c++){
+        let score=0;
+        body.slice(0,25).forEach(r=>{ if(parseFlexibleDate(r[c])) score++; });
+        if(score>bestScore){ bestScore=score; bestIdx=c; }
+      }
+      if(bestScore===0) throw new Error('could not find a date column in this file');
+      dateColIdx = bestIdx;
+    }
+
+    // 2. remaining columns that are mostly numeric become chartable "value" columns
+    const valueCols = [];
+    headers.forEach((h, idx) => {
+      if(idx===dateColIdx || !h) return;
+      let numericCount=0, total=0;
+      body.forEach(r=>{ const v=(r[idx]||'').trim(); if(v===''){return;} total++; if(!isNaN(Number(v))) numericCount++; });
+      if(total>0 && numericCount/total >= 0.7) valueCols.push(h);
+    });
+    if(valueCols.length===0) throw new Error('no numeric columns found to chart');
+
+    const out = [];
+    body.forEach(r=>{
+      const d = parseFlexibleDate(r[dateColIdx]);
+      if(!d) return;
+      const obj = { Date: toCanonicalDate(d) };
+      headers.forEach((h, idx) => { if(valueCols.includes(h)){ const v=(r[idx]||'').trim(); obj[h]= v===''?0:Number(v); } });
+      out.push(obj);
+    });
+    if(!out.length) throw new Error('no valid dated rows found');
+    return { rows: out, valueCols };
+  }
+
+  function classifyMovementCols(valueCols){
+    const find = (re) => valueCols.find(c=>re.test(c)) || null;
+    return { added: find(/add/i), sale: find(/sold|sale/i), repair: find(/repair/i) };
+  }
+
+  // Tries the known Sohlene template first (exact "Date" header + recognized
+  // columns); if that doesn't match, falls back to auto-detecting the schema
+  // from whatever columns the file actually has.
+  function buildSchemaFromRows(text){
+    try{
+      const templateRows = parseCSV(text);
+      if(templateRows.length){
+        const sampleKeys = Object.keys(templateRows[0]);
+        const matchedCats = ORIGINAL_CATEGORIES.filter(c=>sampleKeys.includes(c));
+        const matchedMove = Object.values(ORIGINAL_MOVEMENT_COLS).filter(c=>sampleKeys.includes(c));
+        if(matchedCats.length > 0 || matchedMove.length > 0){
+          return {
+            mode:'template', rows: templateRows,
+            categories: ORIGINAL_CATEGORIES.slice(),
+            catColor: Object.assign({}, ORIGINAL_CAT_COLOR),
+            movementCols: Object.assign({}, ORIGINAL_MOVEMENT_COLS),
+            barExclude: ORIGINAL_BAR_EXCLUDE.slice()
+          };
+        }
+      }
+    }catch(e){ /* fall through to generic auto-detection below */ }
+
+    const generic = parseGeneric(text);
+    const movement = classifyMovementCols(generic.valueCols);
+    const usedByMovement = new Set(Object.values(movement).filter(Boolean));
+    const categories = generic.valueCols.filter(c=>!usedByMovement.has(c));
+    if(categories.length===0) throw new Error('found columns, but none usable as stock categories');
+    const catColor = {};
+    categories.forEach((c,i)=>catColor[c]=PALETTE[i % PALETTE.length]);
+    return { mode:'dynamic', rows: generic.rows, categories, catColor, movementCols: movement, barExclude: [] };
+  }
+
+  function applySchema(schema, label){
+    ALL_DATA = schema.rows;
+    CATEGORIES = schema.categories;
+    CAT_COLOR = schema.catColor;
+    MOVEMENT_COLS = schema.movementCols;
+    BAR_EXCLUDE = schema.barExclude;
+    schemaMode = schema.mode;
+    activeCats = new Set(CATEGORIES);
+    boundsSet = false;
+  }
+
   // ---- App state ----
   let ALL_DATA = [];
+
   let rangeFilter = 'all';               // '7' | '14' | '30' | 'all' | 'custom'
   let customStart = null;                // 'YYYY-MM-DD' from the date input
   let customEnd = null;
@@ -442,10 +612,11 @@
     let deltaTxt = '', deltaCls = 'flat';
     if(prev){ const diff = total - rowTotal(prev); deltaCls = diff>0?'pos':diff<0?'neg':'flat'; deltaTxt = `${diff>0?'+':''}${diff} vs ${fmtDate(prev['Date'])}`; }
 
-    const sumCol = k => data.reduce((s,r)=>s+(r[k]||0),0);
-    const totalAdded = sumCol('Added to stock');
-    const totalSold = sumCol('Sale');
-    const totalRepair = sumCol('Sent for repair');
+    const sumCol = k => k ? data.reduce((s,r)=>s+(r[k]||0),0) : 0;
+    const totalAdded = sumCol(MOVEMENT_COLS.added);
+    const totalSold = sumCol(MOVEMENT_COLS.sale);
+    const totalRepair = sumCol(MOVEMENT_COLS.repair);
+    const hasMovement = !!(MOVEMENT_COLS.added || MOVEMENT_COLS.sale || MOVEMENT_COLS.repair);
     const netSinceStart = total - rowTotal(first);
     const avgTotal = Math.round(data.reduce((s,r)=>s+rowTotal(r),0)/data.length);
     let topCat='—', topVal=-1;
@@ -454,25 +625,26 @@
     const showKpis   = currentTab === 'dashboard';
     const showArea   = currentTab === 'dashboard' || currentTab === 'reports';
     const showCatChs = currentTab === 'dashboard' || currentTab === 'categories';
-    const showFlow   = currentTab === 'dashboard' || currentTab === 'reports';
+    const showFlow   = (currentTab === 'dashboard' || currentTab === 'reports') && hasMovement;
     const showStack  = currentTab === 'dashboard' || currentTab === 'reports' || currentTab === 'categories';
     const showTable  = currentTab === 'dashboard' || currentTab === 'entries';
+    const totalLabel = schemaMode === 'dynamic' ? 'in stock (filtered)' : 'pieces in stock (filtered)';
 
     body.innerHTML = `
       ${showKpis ? `
       <div class="kpi-row">
-        <div class="kpi"><div class="kpi-icon">${ICONS.box}</div><div class="num">${total}</div><div class="lbl">pieces in stock (filtered)</div>${deltaTxt?`<div class="sub ${deltaCls}">${deltaTxt}</div>`:''}</div>
-        <div class="kpi"><div class="kpi-icon">${ICONS.plus}</div><div class="num">${totalAdded}</div><div class="lbl">added to stock, this range</div></div>
-        <div class="kpi"><div class="kpi-icon">${ICONS.tag}</div><div class="num">${totalSold}</div><div class="lbl">sold, this range</div></div>
-        <div class="kpi"><div class="kpi-icon">${ICONS.wrench}</div><div class="num">${totalRepair}</div><div class="lbl">sent for repair, this range</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.box}</div><div class="num">${total}</div><div class="lbl">${totalLabel}</div>${deltaTxt?`<div class="sub ${deltaCls}">${deltaTxt}</div>`:''}</div>
+        ${MOVEMENT_COLS.added ? `<div class="kpi"><div class="kpi-icon">${ICONS.plus}</div><div class="num">${totalAdded}</div><div class="lbl">${MOVEMENT_COLS.added}, this range</div></div>` : ''}
+        ${MOVEMENT_COLS.sale ? `<div class="kpi"><div class="kpi-icon">${ICONS.tag}</div><div class="num">${totalSold}</div><div class="lbl">${MOVEMENT_COLS.sale}, this range</div></div>` : ''}
+        ${MOVEMENT_COLS.repair ? `<div class="kpi"><div class="kpi-icon">${ICONS.wrench}</div><div class="num">${totalRepair}</div><div class="lbl">${MOVEMENT_COLS.repair}, this range</div></div>` : ''}
         <div class="kpi"><div class="kpi-icon">${ICONS.trend}</div><div class="num">${netSinceStart>=0?'+':''}${netSinceStart}</div><div class="lbl">net change since ${fmtDate(first['Date'])}</div></div>
         <div class="kpi"><div class="kpi-icon">${ICONS.star}</div><div class="num">${topCat}</div><div class="lbl">largest category (${topVal})</div></div>
-        <div class="kpi"><div class="kpi-icon">${ICONS.chart}</div><div class="num">${avgTotal}</div><div class="lbl">average total stock</div></div>
+        <div class="kpi"><div class="kpi-icon">${ICONS.chart}</div><div class="num">${avgTotal}</div><div class="lbl">average total</div></div>
         <div class="kpi"><div class="kpi-icon">${ICONS.calendar}</div><div class="num">${data.length}</div><div class="lbl">days in range</div></div>
       </div>` : ''}
 
       ${showArea ? `
-      <div class="section-label">Total stock, over time — area chart</div>
+      <div class="section-label">Total, over time — area chart</div>
       <div class="chart-box tall"><canvas id="ss-area"></canvas></div>` : ''}
 
       ${showCatChs ? `
@@ -482,13 +654,13 @@
           <div class="chart-box"><canvas id="ss-hbar"></canvas></div>
         </div>
         <div>
-          <div class="section-label">Stock composition, latest — pie chart</div>
+          <div class="section-label">Composition, latest — pie chart</div>
           <div class="chart-box"><canvas id="ss-pie"></canvas></div>
         </div>
       </div>` : ''}
 
       ${showFlow ? `
-      <div class="section-label">Added / sold / repaired — bar chart</div>
+      <div class="section-label">${[MOVEMENT_COLS.added,MOVEMENT_COLS.sale,MOVEMENT_COLS.repair].filter(Boolean).join(' / ')} — bar chart</div>
       <div class="chart-box"><canvas id="ss-flow"></canvas></div>` : ''}
 
       ${showStack ? `
@@ -499,8 +671,8 @@
       <div class="section-label">Entries in range</div>
       <div class="table-scroll">
       <table>
-        <thead><tr><th>Date</th>${catsOn.map(c=>`<th>${c}</th>`).join('')}<th>Added</th><th>Sold</th><th>Repair</th><th>Total (filtered)</th></tr></thead>
-        <tbody>${data.slice(-10).reverse().map(r=>`<tr><td>${fmtDate(r['Date'])}</td>${catsOn.map(c=>`<td>${r[c]||0}</td>`).join('')}<td>${r['Added to stock']||0}</td><td>${r['Sale']||0}</td><td>${r['Sent for repair']||0}</td><td>${rowTotal(r)}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>Date</th>${catsOn.map(c=>`<th>${c}</th>`).join('')}${MOVEMENT_COLS.added?'<th>Added</th>':''}${MOVEMENT_COLS.sale?'<th>Sold</th>':''}${MOVEMENT_COLS.repair?'<th>Repair</th>':''}<th>Total (filtered)</th></tr></thead>
+        <tbody>${data.slice(-10).reverse().map(r=>`<tr><td>${fmtDate(r['Date'])}</td>${catsOn.map(c=>`<td>${r[c]||0}</td>`).join('')}${MOVEMENT_COLS.added?`<td>${r[MOVEMENT_COLS.added]||0}</td>`:''}${MOVEMENT_COLS.sale?`<td>${r[MOVEMENT_COLS.sale]||0}</td>`:''}${MOVEMENT_COLS.repair?`<td>${r[MOVEMENT_COLS.repair]||0}</td>`:''}<td>${rowTotal(r)}</td></tr>`).join('')}</tbody>
       </table>
       </div>` : ''}
     `;
@@ -523,8 +695,13 @@
     // Horizontal bar — category breakdown (active categories only, minus a few low-signal ones)
     if(document.getElementById('ss-hbar')){
     destroy(hbarChart);
-    const BAR_EXCLUDE = ['RFS','Stone','Ring Collet','Detachable rings'];
-    const barCats = catsOn.filter(c=>!BAR_EXCLUDE.includes(c));
+    const BAR_EXCLUDE_LOCAL = BAR_EXCLUDE.length ? BAR_EXCLUDE : [];
+    let barCats = catsOn.filter(c=>!BAR_EXCLUDE_LOCAL.includes(c));
+    // If there are still a lot of categories (e.g. an auto-detected sheet with many numeric
+    // columns), keep the bar chart legible by showing only the top 8 by latest value.
+    if(barCats.length > 8){
+      barCats = barCats.slice().sort((a,b)=>(latest[b]||0)-(latest[a]||0)).slice(0,8);
+    }
     hbarChart = new Chart(document.getElementById('ss-hbar').getContext('2d'), {
       type:'bar',
       data:{ labels:barCats, datasets:[{ data:barCats.map(c=>latest[c]||0), backgroundColor:barCats.map(c=>CAT_COLOR[c]) }] },
@@ -547,13 +724,13 @@
     if(document.getElementById('ss-flow')){
     destroy(flowChart);
     const flowData = data.slice(-15);
+    const flowDatasets = [];
+    if(MOVEMENT_COLS.added) flowDatasets.push({ label:MOVEMENT_COLS.added, data:flowData.map(r=>r[MOVEMENT_COLS.added]||0), backgroundColor:'#059669' });
+    if(MOVEMENT_COLS.sale) flowDatasets.push({ label:MOVEMENT_COLS.sale, data:flowData.map(r=>r[MOVEMENT_COLS.sale]||0), backgroundColor:'#DC2626' });
+    if(MOVEMENT_COLS.repair) flowDatasets.push({ label:MOVEMENT_COLS.repair, data:flowData.map(r=>r[MOVEMENT_COLS.repair]||0), backgroundColor:'#F59E0B' });
     flowChart = new Chart(document.getElementById('ss-flow').getContext('2d'), {
       type:'bar',
-      data:{ labels:flowData.map(r=>fmtDate(r['Date'])), datasets:[
-        { label:'Added', data:flowData.map(r=>r['Added to stock']||0), backgroundColor:'#059669' },
-        { label:'Sold', data:flowData.map(r=>r['Sale']||0), backgroundColor:'#DC2626' },
-        { label:'Repaired', data:flowData.map(r=>r['Sent for repair']||0), backgroundColor:'#F59E0B' }
-      ]},
+      data:{ labels:flowData.map(r=>fmtDate(r['Date'])), datasets:flowDatasets },
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top', labels:{font:{size:10},boxWidth:10}}}, scales:{ x:{ticks:{maxTicksLimit:8,font:{size:9},color:'#6B7280'},grid:{display:false}}, y:{ticks:{font:{size:10},color:'#6B7280'},grid:{color:'#E5E7EB'}} } }
     });
     }
@@ -572,11 +749,13 @@
   function renderSettings(){
     const lastRow = ALL_DATA.length ? ALL_DATA[ALL_DATA.length-1] : null;
     const sourceKindLabel = { sheet:'Google Sheet', url:'URL / API (CSV)', 'csv-file':'Uploaded CSV file', 'excel-file':'Uploaded Excel file' }[dataSourceMode];
+    const schemaLabel = schemaMode === 'template' ? 'Standard template (matches your original sheet)' : 'Auto-detected from file columns';
     body.innerHTML = `
       <div class="section-label">Connection</div>
       <div class="settings-panel">
         <div class="settings-row"><span class="k">Connected source</span><span class="v">${sourceKindLabel}</span></div>
         <div class="settings-row"><span class="k">Source name</span><span class="v" style="max-width:280px; overflow-wrap:anywhere;">${dataSourceLabel}</span></div>
+        <div class="settings-row"><span class="k">Column layout</span><span class="v">${schemaLabel}</span></div>
         <div class="settings-row"><span class="k">Auto-refresh</span><span class="v">${(dataSourceMode==='sheet'||dataSourceMode==='url') ? 'Every 60 seconds' : 'Off — static file'}</span></div>
         <div class="settings-row"><span class="k">Last entry loaded</span><span class="v">${lastRow ? fmtDate(lastRow['Date']) : '—'}</span></div>
         <div class="settings-row"><span class="k">Rows loaded</span><span class="v">${ALL_DATA.length}</span></div>
@@ -607,7 +786,7 @@
 
         <p class="source-note">
           Works with any Google Sheet (must be shared publicly), a plain CSV file or link, or an uploaded Excel file — the first sheet is used.
-          The new source needs the same columns as your current template (Date, each stock category, Added to stock, Sent for repair, Sale, Total) for the charts to populate correctly.
+          It first checks whether the new source matches your original template exactly; if it doesn't, it automatically detects the date column and treats every other numeric column as a category, then rebuilds the KPIs and charts around whatever it finds. Columns with names containing "add", "sold"/"sale", or "repair" are picked up automatically as movement columns; everything else numeric becomes a stock category.
           <br><br>
           Power BI, SQL, and Python data can't be reached directly from this file — there's no server here to hold credentials or run queries. But if any of them can publish their data as a URL that returns CSV (a Power BI "Publish to web" export, a small script/API endpoint, etc.), paste that URL above and it'll work the same way as a Google Sheet.
         </p>
@@ -658,16 +837,14 @@
       const res = await fetch(url, {cache:'no-store'});
       if(!res.ok) throw new Error('server returned ' + res.status);
       const text = await res.text();
-      const data = parseCSV(text);
-      if(!data.length) throw new Error('no dated rows found in that source');
-      ALL_DATA = data;
+      const schema = buildSchemaFromRows(text);
+      applySchema(schema, rawUrl);
       ACTIVE_CSV_URL = url;
       dataSourceMode = gMatch ? 'sheet' : 'url';
       dataSourceLabel = rawUrl;
-      boundsSet = false;
       refreshTimeEl.textContent = 'live, refreshed ' + new Date().toLocaleTimeString();
       syncNoteEl.textContent = '';
-      setSourceStatus('Connected — showing ' + data.length + ' rows.', false);
+      setSourceStatus(schemaStatusMessage(schema), false);
       renderAll();
     }catch(e){
       setSourceStatus('Could not load that source (' + e.message + '). Make sure it is publicly viewable and returns CSV.', true);
@@ -680,15 +857,13 @@
     const reader = new FileReader();
     reader.onload = () => {
       try{
-        const data = parseCSV(reader.result);
-        if(!data.length) throw new Error('no dated rows found in that file');
-        ALL_DATA = data;
+        const schema = buildSchemaFromRows(reader.result);
+        applySchema(schema, file.name);
         dataSourceMode = 'csv-file';
         dataSourceLabel = file.name;
-        boundsSet = false;
         refreshTimeEl.textContent = 'static file, loaded ' + new Date().toLocaleTimeString();
         syncNoteEl.textContent = 'Using an uploaded file — re-upload it any time you want to refresh the numbers.';
-        setSourceStatus('Loaded ' + data.length + ' rows from ' + file.name + '.', false);
+        setSourceStatus(schemaStatusMessage(schema), false);
         renderAll();
       }catch(e){ setSourceStatus('Could not read that file (' + e.message + ').', true); }
     };
@@ -709,23 +884,34 @@
       const wb = XLSX.read(buf, {type:'array'});
       const sheetName = wb.SheetNames[0];
       const csvText = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]);
-      const data = parseCSV(csvText);
-      if(!data.length) throw new Error('no dated rows found on the first sheet');
-      ALL_DATA = data;
+      const schema = buildSchemaFromRows(csvText);
+      applySchema(schema, file.name);
       dataSourceMode = 'excel-file';
       dataSourceLabel = file.name;
-      boundsSet = false;
       refreshTimeEl.textContent = 'static file, loaded ' + new Date().toLocaleTimeString();
       syncNoteEl.textContent = 'Using an uploaded file — re-upload it any time you want to refresh the numbers.';
-      setSourceStatus('Loaded ' + data.length + ' rows from ' + file.name + ' (sheet: ' + sheetName + ').', false);
+      setSourceStatus(schemaStatusMessage(schema) + ' (sheet: ' + sheetName + ')', false);
       renderAll();
     }catch(e){ setSourceStatus('Could not read that Excel file (' + e.message + ').', true); }
+  }
+
+  function schemaStatusMessage(schema){
+    if(schema.mode === 'template'){
+      return 'Connected — showing ' + schema.rows.length + ' rows using your standard template.';
+    }
+    return 'Connected — auto-detected ' + schema.categories.length + ' category column(s) and ' + schema.rows.length + ' dated rows. Columns didn\'t match the standard template, so this dashboard was built from what was actually in the file.';
   }
 
   function resetToDefaultSource(){
     ACTIVE_CSV_URL = CSV_URL;
     dataSourceMode = 'sheet';
     dataSourceLabel = 'Google Sheet (default)';
+    CATEGORIES = ORIGINAL_CATEGORIES.slice();
+    CAT_COLOR = Object.assign({}, ORIGINAL_CAT_COLOR);
+    MOVEMENT_COLS = Object.assign({}, ORIGINAL_MOVEMENT_COLS);
+    BAR_EXCLUDE = ORIGINAL_BAR_EXCLUDE.slice();
+    schemaMode = 'template';
+    activeCats = new Set(CATEGORIES);
     boundsSet = false;
     setSourceStatus('Reconnecting to the default sheet…', false);
     tryLive();
@@ -744,8 +930,10 @@
       const res = await fetch(ACTIVE_CSV_URL, {cache:'no-store'});
       if(!res.ok) throw new Error('fetch failed');
       const text = await res.text();
-      const data = parseCSV(text);
-      ALL_DATA = data;
+      const schema = buildSchemaFromRows(text);
+      const schemaChanged = JSON.stringify(schema.categories) !== JSON.stringify(CATEGORIES)
+                          || JSON.stringify(schema.movementCols) !== JSON.stringify(MOVEMENT_COLS);
+      if(schemaChanged){ applySchema(schema); } else { ALL_DATA = schema.rows; }
       refreshTimeEl.textContent = 'live, refreshed ' + new Date().toLocaleTimeString();
       syncNoteEl.textContent = '';
       renderAll();
@@ -776,6 +964,14 @@
   });
   document.getElementById('ss-refresh').addEventListener('click', tryLive);
 
+  // Mobile sidebar drawer
+  const sidebarEl = document.querySelector('.sidebar');
+  const backdropEl = document.getElementById('ss-backdrop');
+  function openSidebar(){ sidebarEl.classList.add('open'); backdropEl.classList.add('open'); }
+  function closeSidebar(){ sidebarEl.classList.remove('open'); backdropEl.classList.remove('open'); }
+  document.getElementById('ss-hamburger').addEventListener('click', openSidebar);
+  backdropEl.addEventListener('click', closeSidebar);
+
   // Sidebar navigation — switches which section of the dashboard is shown
   document.querySelectorAll('#ss-nav .nav-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -783,6 +979,7 @@
       item.classList.add('active');
       currentTab = item.dataset.tab;
       renderAll();
+      closeSidebar();
     });
   });
 
